@@ -169,7 +169,7 @@ export default function App() {
       setDimensions({ w: c.width, h: c.height });
       try {
         if (isTauri())
-          await invoke("load_source", pixels.data, {
+          await invoke("load_source", pixels.data.buffer, {
             headers: {
               "x-image-width": String(c.width),
               "x-image-height": String(c.height),
@@ -841,3 +841,4 @@ export default function App() {
     </main>
   );
 }
+
