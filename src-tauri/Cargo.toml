@@ -1,0 +1,23 @@
+[package]
+name = "dlss-image-studio"
+version = "0.1.0"
+description = "Windows image studio with native D3D12 processing"
+edition = "2021"
+rust-version = "1.85"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+cmake = "0.1"
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "tiff"] }
+arboard = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
