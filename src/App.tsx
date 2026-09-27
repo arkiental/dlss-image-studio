@@ -39,6 +39,7 @@ import {
 } from "./state";
 type Capability = {
   gpu: string;
+  gpu_family?: string;
   driver: string;
   vram_mb: number;
   d3d12: boolean;
@@ -801,7 +802,15 @@ export default function App() {
             </div>
             <dl>
               <dt>GPU</dt>
-              <dd>{cap?.gpu ?? "Browser preview"}</dd>
+              <dd>
+                {cap?.gpu ?? (isTauri() ? "Detecting…" : "Browser preview")}
+              </dd>
+              {cap?.gpu_family && (
+                <>
+                  <dt>GPU family</dt>
+                  <dd>{cap.gpu_family}</dd>
+                </>
+              )}
               <dt>Driver</dt>
               <dd>{cap?.driver ?? "Not available in browser"}</dd>
               <dt>GPU memory</dt>
@@ -810,7 +819,9 @@ export default function App() {
               <dd>
                 {cap?.d3d12
                   ? "Native D3D12 compute"
-                  : "Browser worker · application color processing"}
+                  : isTauri()
+                    ? "Native backend unavailable"
+                    : "Browser worker · application color processing"}
               </dd>
               <dt>Streamline</dt>
               <dd>{cap?.streamline ?? "Not loaded"}</dd>
@@ -841,4 +852,3 @@ export default function App() {
     </main>
   );
 }
-

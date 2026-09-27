@@ -1,0 +1,20 @@
+name: Native D3D12 smoke binary
+on:
+  push:
+    branches: [main]
+    paths: ['native/**', '.github/workflows/native.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S native/dlss_backend -B native/build -A x64
+      - run: cmake --build native/build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: D3D12-native-smoke
+          path: native/build/Release/native_smoke.exe

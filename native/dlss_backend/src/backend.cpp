@@ -45,6 +45,25 @@ std::string escaped(std::string s) {
   }
   return out;
 }
+std::string fileVersion(const std::filesystem::path &path) {
+  DWORD ignored = 0;
+  DWORD size = GetFileVersionInfoSizeW(path.c_str(), &ignored);
+  if (!size)
+    return "unknown";
+  std::vector<uint8_t> data(size);
+  if (!GetFileVersionInfoW(path.c_str(), 0, size, data.data()))
+    return "unknown";
+  VS_FIXEDFILEINFO *info = nullptr;
+  UINT infoSize = 0;
+  if (!VerQueryValueW(data.data(), L"\\", reinterpret_cast<void **>(&info),
+                      &infoSize) ||
+      !info || infoSize < sizeof(*info))
+    return "unknown";
+  return std::to_string(HIWORD(info->dwFileVersionMS)) + "." +
+         std::to_string(LOWORD(info->dwFileVersionMS)) + "." +
+         std::to_string(HIWORD(info->dwFileVersionLS)) + "." +
+         std::to_string(LOWORD(info->dwFileVersionLS));
+}
 struct Backend {
   ComPtr<ID3D12Device> device;
   ComPtr<ID3D12CommandQueue> queue;
@@ -167,9 +186,11 @@ struct Backend {
             p.flags = sl::PreferenceFlags::eDisableCLStateTracking;
             auto result = init(p, sl::kSDKVersion);
             slInitialized = result == sl::Result::eOk;
-            slStatus = slInitialized ? "Initialized with SDK 2.14.1"
-                                     : "Initialization error " +
-                                           std::to_string(int(result));
+            slStatus =
+                slInitialized
+                    ? "Initialized runtime " + fileVersion(interposer) +
+                          " (SDK headers 2.14.1)"
+                    : "Initialization error " + std::to_string(int(result));
           }
         } else
           slStatus = "LoadLibraryEx failed";
@@ -185,10 +206,12 @@ struct Backend {
     check(CreateDXGIFactory2(0, IID_PPV_ARGS(&factory)), "Create DXGI factory");
     ComPtr<IDXGIAdapter1> adapter, best;
     DXGI_ADAPTER_DESC1 desc{};
-    for (UINT i = 0; factory->EnumAdapterByGpuPreference(
-                         i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                         IID_PPV_ARGS(&adapter)) != DXGI_ERROR_NOT_FOUND;
-         ++i) {
+    for (UINT i = 0;; ++i) {
+      auto enumerated = factory->EnumAdapterByGpuPreference(
+          i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter));
+      if (enumerated == DXGI_ERROR_NOT_FOUND)
+        break;
+      check(enumerated, "Enumerate DXGI adapter");
       DXGI_ADAPTER_DESC1 d{};
       adapter->GetDesc1(&d);
       if (d.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
@@ -292,8 +315,16 @@ struct Backend {
     pd.CS = {code->GetBufferPointer(), code->GetBufferSize()};
     check(device->CreateComputePipelineState(&pd, IID_PPV_ARGS(&pipeline)),
           "Create compute pipeline");
-    caps = "{\"gpu\":\"" + escaped(utf8(desc.Description)) +
-           "\",\"driver\":\"" + driver.str() + "\",\"vram_mb\":" +
+    const auto gpuName = utf8(desc.Description);
+    std::string gpuFamily = desc.VendorId == 0x10de
+                                ? "NVIDIA, generation unknown"
+                                : "Non-NVIDIA adapter";
+    for (const auto *family : {"RTX 50", "RTX 40", "RTX 30", "RTX 20"})
+      if (gpuName.find(family) != std::string::npos)
+        gpuFamily = std::string(family) + " series (name-based identification)";
+    caps = "{\"gpu\":\"" + escaped(gpuName) + "\",\"gpu_family\":\"" +
+           escaped(gpuFamily) + "\",\"driver\":\"" + driver.str() +
+           "\",\"vram_mb\":" +
            std::to_string(desc.DedicatedVideoMemory / 1048576) +
            ",\"d3d12\":true,\"streamline\":\"" + escaped(slStatus) +
            "\",\"neural_rendering\":\"" + escaped(nrStatus) +

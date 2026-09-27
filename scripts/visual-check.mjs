@@ -92,8 +92,17 @@ if (
   await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
 )
   throw Error("Minimum window overflow");
+const saturationBounds = await page
+  .getByRole("slider", { name: "Saturation", exact: true })
+  .boundingBox();
+const exportBounds = await page.locator(".export").boundingBox();
+if (
+  !saturationBounds ||
+  !exportBounds ||
+  saturationBounds.y + saturationBounds.height > exportBounds.y
+)
+  throw Error("Control/export overlap");
 await page.screenshot({ path: "docs/screenshots/studio-minimum.png" });
 await browser.close();
 if (errors.length) throw Error(errors.join("\n"));
 console.log("UI functional checks passed");
-
