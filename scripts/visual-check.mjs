@@ -1,6 +1,65 @@
-import{chromium}from'@playwright/test';import fs from'node:fs';
-const browser=await chromium.launch({executablePath:process.env.BROWSER_EXE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
-const page=await browser.newPage({viewport:{width:1536,height:1024},deviceScaleFactor:1});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:1420');await page.waitForFunction(()=>document.querySelector('.main-image')?.width>1000);await page.waitForTimeout(1500);fs.mkdirSync('docs/screenshots',{recursive:true});await page.screenshot({path:'docs/screenshots/studio-1536.png'});
-await page.getByRole('slider',{name:'Contrast',exact:true}).fill('35');await page.waitForTimeout(500);if(await page.getByRole('spinbutton',{name:'Contrast value',exact:true}).inputValue()!=='35')throw Error('Slider value failed');await page.getByRole('button',{name:'Natural',exact:true}).click();if(await page.getByRole('spinbutton',{name:'Vibrance value',exact:true}).inputValue()!=='14')throw Error('Preset failed');await page.getByRole('button',{name:'Neutral',exact:true}).click();await page.getByRole('slider',{name:'Resolution',exact:true}).fill('1');await page.getByRole('slider',{name:'Resolution',exact:true}).fill('100');await page.getByRole('slider',{name:'Local tone',exact:true}).fill('0.5');await page.getByRole('button',{name:'Reset',exact:true}).click();if(await page.getByRole('spinbutton',{name:'Local tone value',exact:true}).inputValue()!=='0.00')throw Error('Reset failed');
-await page.getByRole('button',{name:'Settings',exact:true}).click();await page.screenshot({path:'docs/screenshots/settings.png'});await page.getByRole('button',{name:'Close settings',exact:true}).click();
-const region=page.getByRole('slider',{name:'Local adjustment region'});const before=await region.boundingBox();await region.focus();await page.keyboard.press('ArrowRight');const after=await region.boundingBox();if(!before||!after||after.x<=before.x)throw Error('Region transform failed');await page.getByRole('button',{name:'Close zoom',exact:true}).click();await page.keyboard.press('z');if(!await page.locator('.zoom-panel').isVisible())throw Error('Zoom restore failed');await page.screenshot({path:'docs/screenshots/studio-tested.png'});await browser.close();if(errors.length)throw Error(errors.join('\n'));console.log('UI functional checks passed');
+import { chromium } from "@playwright/test";
+import fs from "node:fs";
+const browser = await chromium.launch({
+  executablePath:
+    process.env.BROWSER_EXE ||
+    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  headless: true,
+});
+const page = await browser.newPage({
+  viewport: { width: 1536, height: 1024 },
+  deviceScaleFactor: 1,
+});
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto("http://127.0.0.1:1420");
+await page.waitForFunction(
+  () => document.querySelector(".main-image")?.width > 1000,
+);
+await page.waitForTimeout(1500);
+fs.mkdirSync("docs/screenshots", { recursive: true });
+await page.screenshot({ path: "docs/screenshots/studio-1536.png" });
+await page.getByRole("slider", { name: "Contrast", exact: true }).fill("35");
+await page.waitForTimeout(500);
+if (
+  (await page
+    .getByRole("spinbutton", { name: "Contrast value", exact: true })
+    .inputValue()) !== "35"
+)
+  throw Error("Slider value failed");
+await page.getByRole("button", { name: "Natural", exact: true }).click();
+if (
+  (await page
+    .getByRole("spinbutton", { name: "Vibrance value", exact: true })
+    .inputValue()) !== "14"
+)
+  throw Error("Preset failed");
+await page.getByRole("button", { name: "Neutral", exact: true }).click();
+await page.getByRole("slider", { name: "Resolution", exact: true }).fill("1");
+await page.getByRole("slider", { name: "Resolution", exact: true }).fill("100");
+await page.getByRole("slider", { name: "Local tone", exact: true }).fill("0.5");
+await page.getByRole("button", { name: "Reset", exact: true }).click();
+if (
+  (await page
+    .getByRole("spinbutton", { name: "Local tone value", exact: true })
+    .inputValue()) !== "0.00"
+)
+  throw Error("Reset failed");
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+await page.screenshot({ path: "docs/screenshots/settings.png" });
+await page.getByRole("button", { name: "Close settings", exact: true }).click();
+const region = page.getByRole("slider", { name: "Local adjustment region" });
+const before = await region.boundingBox();
+await region.focus();
+await page.keyboard.press("ArrowRight");
+const after = await region.boundingBox();
+if (!before || !after || after.x <= before.x)
+  throw Error("Region transform failed");
+await page.getByRole("button", { name: "Close zoom", exact: true }).click();
+await page.keyboard.press("z");
+if (!(await page.locator(".zoom-panel").isVisible()))
+  throw Error("Zoom restore failed");
+await page.screenshot({ path: "docs/screenshots/studio-tested.png" });
+await browser.close();
+if (errors.length) throw Error(errors.join("\n"));
+console.log("UI functional checks passed");
