@@ -1,0 +1,12 @@
+[DLSS5] Evaluation: NOT EXECUTED - NR API/plugin unavailable
+[IMAGE] Source loaded; temporal history is unused because NR is unavailable
+[STREAMLINE] Initialized runtime 2.14.1.0 (SDK headers 2.14.1)
+[DLSS5] slIsFeatureSupported(kFeatureDLSS_NR): 31
+[STREAMLINE] slSetD3DDevice: 0
+[D3D12] GPU: NVIDIA GeForce RTX 3070 Driver: 32.0.15.9186
+[DLSS5] Evaluation: NOT EXECUTED - NR API/plugin unavailable
+[IMAGE] Source loaded; temporal history is unused because NR is unavailable
+[D3D12] Application color compute executed: 64x64; dispatch and readback 0.249700 ms
+[D3D12] Application color compute executed: 64x64; dispatch and readback 0.140500 ms
+[APP] Invalid image dimensions (maximum 64 megapixels / 16384 per side)
+[IMAGE] Source loaded; temporal history is unused because NR is unavailable
