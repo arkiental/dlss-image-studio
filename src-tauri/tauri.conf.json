@@ -16,7 +16,7 @@
         "width": 1536,
         "height": 1024,
         "minWidth": 1080,
-        "minHeight": 720,
+        "minHeight": 840,
         "decorations": false,
         "resizable": true,
         "dragDropEnabled": true
@@ -43,3 +43,4 @@
     }
   }
 }
+

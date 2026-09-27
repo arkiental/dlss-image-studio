@@ -61,7 +61,7 @@ h3 {
 main {
   height: 100vh;
   min-width: 1080px;
-  min-height: 720px;
+  min-height: 840px;
   background: #111212;
 }
 .titlebar {
@@ -640,3 +640,4 @@ input::-webkit-outer-spin-button {
     font-size: 30px;
   }
 }
+

@@ -169,10 +169,12 @@ export default function App() {
       setDimensions({ w: c.width, h: c.height });
       try {
         if (isTauri())
-          await invoke("load_source", {
-            width: c.width,
-            height: c.height,
-            rgba: Array.from(pixels.data),
+          await invoke("load_source", pixels.data, {
+            headers: {
+              "x-image-width": String(c.width),
+              "x-image-height": String(c.height),
+              "x-source-id": String(generation),
+            },
           });
         if (generation !== sourceGeneration.current) return;
         source.current = c;
@@ -399,7 +401,10 @@ export default function App() {
     window.addEventListener("pointerup", end);
   }
   async function exportImage(kind: "file" | "clipboard" | "all") {
-    if (!sourceReady.current) { notify("The source image is not ready for processing."); return; }
+    if (!sourceReady.current) {
+      notify("The source image is not ready for processing.");
+      return;
+    }
     setBusy(true);
     try {
       if (isTauri()) {

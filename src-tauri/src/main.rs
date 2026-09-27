@@ -46,11 +46,26 @@ static BACKEND: Mutex<Backend> = Mutex::new(Backend {
     initialized: false,
 });
 static REQUEST: AtomicU64 = AtomicU64::new(0);
+static SOURCE_REQUEST: AtomicU64 = AtomicU64::new(0);
 fn native_error() -> String {
     unsafe {
         CStr::from_ptr(studio_error())
             .to_string_lossy()
             .into_owned()
+    }
+}
+fn app_log(message: &str) {
+    use std::io::Write;
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let folder = PathBuf::from(local).join("DLSS Image Studio").join("logs");
+        let _ = std::fs::create_dir_all(&folder);
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(folder.join("studio.log"))
+        {
+            let _ = writeln!(file, "{message}");
+        }
     }
 }
 impl Backend {
@@ -166,7 +181,23 @@ async fn capabilities() -> Result<serde_json::Value, String> {
     blocking(||{let mut b=BACKEND.lock().map_err(|_|"Backend lock failed")?;if let Err(e)=b.init(){return Ok(serde_json::json!({"gpu":"Unavailable","driver":"Unknown","vram_mb":0,"d3d12":false,"streamline":"Not initialized","neural_rendering":"Unavailable","detail":e}));}serde_json::from_str(unsafe{CStr::from_ptr(studio_capabilities())}.to_str().map_err(|_|"Invalid native diagnostics")?).map_err(|e|e.to_string())}).await
 }
 #[tauri::command]
-async fn load_source(width: u32, height: u32, rgba: Vec<u8>) -> Result<(), String> {
+async fn load_source(request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    let header = |name: &str| -> Result<u64, String> {
+        request
+            .headers()
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse().ok())
+            .ok_or_else(|| format!("Missing or invalid image header: {name}"))
+    };
+    let width = u32::try_from(header("x-image-width")?).map_err(|_| "Invalid image width")?;
+    let height = u32::try_from(header("x-image-height")?).map_err(|_| "Invalid image height")?;
+    let source_id = header("x-source-id")?;
+    let rgba = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
+        _ => return Err("Expected binary RGBA pixels".into()),
+    };
+    SOURCE_REQUEST.fetch_max(source_id, Ordering::SeqCst);
     REQUEST.fetch_add(1, Ordering::SeqCst);
     blocking(move || {
         if width == 0
@@ -179,6 +210,9 @@ async fn load_source(width: u32, height: u32, rgba: Vec<u8>) -> Result<(), Strin
             return Err("Invalid image dimensions or pixel data".into());
         }
         let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        if SOURCE_REQUEST.load(Ordering::SeqCst) != source_id {
+            return Err("Superseded source".into());
+        }
         b.init()?;
         if unsafe { studio_load(rgba.as_ptr(), width, height) } != 0 {
             return Err(native_error());
@@ -241,6 +275,9 @@ fn write_image(path: &Path, bytes: Vec<u8>, w: u32, h: u32) -> Result<(), String
         let _ = std::fs::remove_file(path);
         return Err(format!("Export failed: {e}"));
     }
+    app_log(&format!(
+        "[EXPORT] Saved {w}x{h} {fmt:?}; original dimensions retained"
+    ));
     Ok(())
 }
 #[tauri::command]
@@ -272,7 +309,12 @@ async fn copy_image(state: StudioState) -> Result<(), String> {
                     bytes: Cow::Owned(bytes),
                 })
             })
-            .map_err(|e| format!("Clipboard unavailable: {e}"))
+            .map_err(|e| format!("Clipboard unavailable: {e}"))?;
+        app_log(&format!(
+            "[EXPORT] Copied {}x{} RGBA to Windows clipboard",
+            b.width, b.height
+        ));
+        Ok(())
     })
     .await
 }
@@ -348,5 +390,21 @@ mod tests {
             format(Path::new("photo.PNG")).unwrap(),
             image::ImageFormat::Png
         );
+    }
+    #[test]
+    fn encodes_original_dimensions_and_refuses_overwrite() {
+        let folder =
+            std::env::temp_dir().join(format!("studio-export-test-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        for extension in ["png", "jpg", "tiff"] {
+            let path = folder.join(format!("result.{extension}"));
+            let bytes = vec![180u8; 17 * 9 * 4];
+            write_image(&path, bytes.clone(), 17, 9).unwrap();
+            let decoded = image::open(&path).unwrap();
+            assert_eq!((decoded.width(), decoded.height()), (17, 9));
+            assert!(write_image(&path, bytes, 17, 9).is_err());
+            std::fs::remove_file(path).unwrap();
+        }
+        std::fs::remove_dir(folder).unwrap();
     }
 }
