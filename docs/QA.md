@@ -1,3 +1,5 @@
+> Historical verification below describes pre-neural releases. Current behavior and evidence: [Neural verification](NEURAL_VERIFICATION.md).
+
 # Release verification — 0.1.0
 
 Verified source: `89f05765110eb170337bf2246d837f32a2b16b15`.

@@ -62,48 +62,16 @@ const pixels = () =>
     };
   });
 await settled();
-const neutralPixels = await pixels();
-await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.7");
-await settled();
-const wholePixels = await pixels();
 if (
-  wholePixels.corner[0] <= neutralPixels.corner[0] ||
-  wholePixels.center[0] <= neutralPixels.center[0]
+  !(await page.getByRole("slider", { name: "Tone", exact: true }).isDisabled())
 )
-  throw Error("Whole-image tone failed");
-await page.screenshot({ path: "test-results/whole-image-tone.png" });
-await page.getByRole("button", { name: "Selected area", exact: true }).click();
-await settled();
+  throw Error("Browser neural controls must be disabled");
 if (
-  JSON.stringify((await pixels()).center) !==
-  JSON.stringify(neutralPixels.center)
+  !(await page
+    .getByRole("checkbox", { name: "Enable neural rendering" })
+    .isDisabled())
 )
-  throw Error("Selected-area adjustment leaked outside mask");
-await page.screenshot({ path: "test-results/selected-area-tone.png" });
-await page.getByRole("button", { name: "Whole image", exact: true }).click();
-await settled();
-const beforeMove = await page
-  .locator(".main-image")
-  .evaluate((c) => c.toDataURL());
-await page.getByRole("slider", { name: "Zoom inspection region" }).focus();
-await page.keyboard.press("ArrowRight");
-if (
-  (await page.locator(".main-image").evaluate((c) => c.toDataURL())) !==
-  beforeMove
-)
-  throw Error("Zoom inspection changed whole-image processing");
-await page.getByRole("button", { name: "Reset", exact: true }).click();
-await settled();
-await page.getByRole("slider", { name: "Resolution", exact: true }).fill("1");
-await page.getByRole("slider", { name: "Resolution", exact: true }).fill("100");
-await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.5");
-await page.getByRole("button", { name: "Reset", exact: true }).click();
-if (
-  (await page
-    .getByRole("spinbutton", { name: "Tone value", exact: true })
-    .inputValue()) !== "0.00"
-)
-  throw Error("Reset failed");
+  throw Error("Browser must not pretend to support neural rendering");
 await page.getByRole("button", { name: "Settings", exact: true }).click();
 await page.screenshot({ path: "docs/screenshots/settings.png" });
 await page.getByRole("button", { name: "Close settings", exact: true }).click();
@@ -119,8 +87,7 @@ await page.keyboard.press("z");
 if (!(await page.locator(".zoom-panel").isVisible()))
   throw Error("Zoom restore failed");
 await page.screenshot({ path: "docs/screenshots/studio-tested.png" });
-await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.5");
-await page.getByRole("slider", { name: "Intensity", exact: true }).fill("2.1");
+await page.getByRole("slider", { name: "Brightness", exact: true }).fill("20");
 await settled();
 const adjustedBeforeReload = await page
   .locator(".main-image")

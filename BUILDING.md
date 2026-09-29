@@ -4,7 +4,7 @@
 
 - Windows 11 x64, Microsoft Edge WebView2 runtime.
 - Node.js 22 LTS (or newer compatible release), npm.
-- Rust stable MSVC x64; tested toolchain target is Rust 1.98.1. Use the lockfile rather than an older compiler with newly resolved dependencies.
+- Rust stable MSVC x64; local verification used Rust 1.95.0. Use the lockfile rather than an older compiler with newly resolved dependencies.
 - Visual Studio 2022 Build Tools, **Desktop development with C++** workload, MSVC v143, Windows 10/11 SDK, and C++ CMake tools for Windows.
 - CMake 3.24 or later on PATH.
 - D3D12-capable GPU to run the editor/native smoke test. NVIDIA adapters are preferred, but ordinary color adjustments do not require RTX hardware.
@@ -52,16 +52,15 @@ The application builds using the MIT-licensed NVIDIA headers included in `third_
 
 Obtain the official x64 package from [NVIDIA's Streamline 2.14.1 release](https://github.com/NVIDIA-RTX/Streamline/releases/tag/v2.14.1), review the included license, and place the signed production runtime under a `streamline` directory immediately beside the application executable. Core diagnostics use `sl.interposer.dll` and `sl.common.dll`. Do not copy development/debug DLLs into a shipping application.
 
-No `PATH`, current-directory or user-configurable DLL search directory is used. The loader verifies NVIDIA's embedded signature and loads from that fixed executable-relative directory with Windows system-only dependency search. OTA/downloading flags are disabled. There is intentionally no `STREAMLINE_SDK_PATH` runtime override. Headers are pinned at build time; installing DLLs does not enable an NR evaluator absent from the source.
+No `PATH`, current-directory or user-configurable DLL search directory is used. The loader verifies NVIDIA's embedded signature and loads from that fixed executable-relative directory with Windows system-only dependency search. OTA/downloading flags are disabled. There is intentionally no `STREAMLINE_SDK_PATH` runtime override. Headers are pinned at build time. These optional core DLLs do not participate in the separately installed neural provider.
 
-## This task's environment
+## Neural runtime verification
 
-The source workspace is `F:/Codex/dlss-image-studio` because C: had no free space. Rust was installed under `F:/Codex/rustup` and `F:/Codex/cargo`; development commands on this machine need:
+Install Visual Enhancer v13.2 separately and configure it as described in [DLSS_INTEGRATION.md](DLSS_INTEGRATION.md). The app's build and installer contain only our adapter, not the provider.
 
 ```powershell
-$env:RUSTUP_HOME = 'F:\Codex\rustup'
-$env:CARGO_HOME = 'F:\Codex\cargo'
-$env:PATH = "F:\Codex\cargo\bin;$env:PATH"
+$env:STUDIO_NEURAL_RUNTIME = 'D:\software\VisualEnhancer-v13.2'
+cargo test --manifest-path src-tauri/Cargo.toml --release real_neural_pipeline -- --ignored --nocapture
 ```
 
-Windows declined the Visual Studio installer elevation, so initial release builds run on GitHub's Windows runner. A local Rust toolchain alone is not enough to compile the native module.
+This ignored-by-default test requires an actual compatible GPU. It validates NGX results, parameter effects, cache/export equality, mask behavior, reloads, odd dimensions and alpha. A provider or evaluation failure fails the test.

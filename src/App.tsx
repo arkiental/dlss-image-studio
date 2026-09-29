@@ -46,6 +46,12 @@ type Capability = {
   streamline: string;
   neural_rendering: string;
   detail: string;
+  runtime_ready: boolean;
+  runtime_path: string;
+  neural_diagnostics?: {
+    feature_evaluations?: number;
+    ngx?: { create_result?: string; evaluate_result?: string };
+  };
 };
 const icons = {
   contrast: Sun,
@@ -65,6 +71,7 @@ function Slider({
   icon: Icon,
   accent = "gold",
   local = false,
+  disabled = false,
 }: {
   label: string;
   value: number;
@@ -75,6 +82,7 @@ function Slider({
   icon: typeof Sun;
   accent?: string;
   local?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div className={`control ${local ? "local-control" : ""} ${accent}`}>
@@ -83,6 +91,7 @@ function Slider({
         <label>{label}</label>
         <input
           aria-label={`${label} value`}
+          disabled={disabled}
           type="number"
           min={min}
           max={max}
@@ -94,6 +103,7 @@ function Slider({
       <div className="slider-wrap">
         <input
           aria-label={label}
+          disabled={disabled}
           type="range"
           min={min}
           max={max}
@@ -112,7 +122,11 @@ function Slider({
   );
 }
 export default function App() {
-  const [state, setState] = useState<StudioState>(defaults),
+  const [state, setState] = useState<StudioState>(() => {
+      const s = defaults();
+      if (!isTauri()) s.neural.enabled = false;
+      return s;
+    }),
     [url, setUrl] = useState("/sample-car.png"),
     [dimensions, setDimensions] = useState({ w: 1560, h: 1008 }),
     [size, setSize] = useState({ w: 1000, h: 660 }),
@@ -188,7 +202,7 @@ export default function App() {
         if (generation !== sourceGeneration.current) return;
         source.current = c;
         sourceReady.current = true;
-        setSourceRevision(generation);
+        setSourceRevision(v => v + 1);
         setDimensions({ w: c.width, h: c.height });
       } catch (error) {
         if (generation !== sourceGeneration.current) return;
@@ -271,39 +285,52 @@ export default function App() {
     completedPreview.url === url;
   useEffect(() => {
     const id = ++version.current;
-    const timer = setTimeout(async () => {
-      if (!source.current || !sourceReady.current) return;
-      setBusy(true);
-      try {
-        if (isTauri()) {
-          const bytes = await invoke<ArrayBuffer>("process_image", { state });
-          if (id !== version.current) return;
-          draw(
-            new ImageData(
-              new Uint8ClampedArray(bytes),
-              source.current.width,
-              source.current.height,
-            ),
-          );
-          setCompletedPreview({ key: processingKey, url });
-          setBusy(false);
-        } else {
-          const c = source.current;
-          worker.current?.postMessage({
-            id,
-            key: processingKey,
-            sourceUrl: url,
-            state,
-            image: c.getContext("2d")!.getImageData(0, 0, c.width, c.height),
-          });
+    setBusy(true);
+    const timer = setTimeout(
+      async () => {
+        if (!source.current || !sourceReady.current) return;
+        setBusy(true);
+        setCompletedPreview({ key: "", url: "" });
+        try {
+          if (isTauri()) {
+            const bytes = await invoke<ArrayBuffer>("process_image", {
+              state,
+              sourceId: sourceGeneration.current,
+            });
+            if (id !== version.current) return;
+            draw(
+              new ImageData(
+                new Uint8ClampedArray(bytes),
+                source.current.width,
+                source.current.height,
+              ),
+            );
+            setCompletedPreview({ key: processingKey, url });
+            setBusy(false);
+            void invoke<Capability>("capabilities")
+              .then(setCap)
+              .catch((e) => notify(String(e)));
+          } else {
+            if (state.neural.enabled)
+              throw new Error("Neural rendering requires the Windows app.");
+            const c = source.current;
+            worker.current?.postMessage({
+              id,
+              key: processingKey,
+              sourceUrl: url,
+              state,
+              image: c.getContext("2d")!.getImageData(0, 0, c.width, c.height),
+            });
+          }
+        } catch (e) {
+          if (id === version.current) {
+            if (String(e) !== "Superseded preview") notify(String(e));
+            setBusy(false);
+          }
         }
-      } catch (e) {
-        if (id === version.current) {
-          if (String(e) !== "Superseded preview") notify(String(e));
-          setBusy(false);
-        }
-      }
-    }, 65);
+      },
+      state.neural.enabled ? 450 : 65,
+    );
     return () => clearTimeout(timer);
   }, [processingKey, sourceRevision]);
   useEffect(drawZoom, [state.zoom, region, fit.width]);
@@ -428,6 +455,7 @@ export default function App() {
     window.addEventListener("pointerup", end);
   }
   async function exportImage(kind: "file" | "clipboard" | "all") {
+    const sourceId = sourceGeneration.current;
     if (!sourceReady.current || !previewReady) {
       notify("Wait for the current image adjustments to finish processing.");
       return;
@@ -436,7 +464,7 @@ export default function App() {
     try {
       if (isTauri()) {
         if (kind === "clipboard") {
-          await invoke("copy_image", { state });
+          await invoke("copy_image", { state, sourceId });
           notify("Full-resolution image copied to clipboard.");
         } else if (kind === "all") {
           const folder = await open({ directory: true });
@@ -445,6 +473,7 @@ export default function App() {
               folder,
               stem,
               state,
+              sourceId,
             });
             notify(`Exported ${paths.length} full-resolution presets.`);
           }
@@ -458,7 +487,7 @@ export default function App() {
             ],
           });
           if (path) {
-            await invoke("export_image", { path, state });
+            await invoke("export_image", { path, state, sourceId });
             notify("Full-resolution image exported.");
           }
         }
@@ -652,7 +681,7 @@ export default function App() {
           </section>
           <section className="local-panel">
             <div className="section-heading">
-              <h2>Image Adjustments</h2>
+              <h2>Neural Rendering</h2>
               <div
                 className="scope-switch"
                 role="group"
@@ -674,6 +703,7 @@ export default function App() {
                 onClick={() =>
                   setState((s) => ({
                     ...s,
+                    neural: { ...s.neural, style: "Default" },
                     local: {
                       ...defaults().local,
                       scope: s.local.scope,
@@ -686,11 +716,61 @@ export default function App() {
                 Reset
               </button>
             </div>
+            <div className="neural-toolbar">
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label="Enable neural rendering"
+                  checked={state.neural.enabled}
+                  disabled={!isTauri()}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      neural: { ...s.neural, enabled: e.target.checked },
+                    }))
+                  }
+                />{" "}
+                Enable neural rendering
+              </label>
+              <label>
+                Neural style{" "}
+                <select
+                  aria-label="Neural style"
+                  disabled={!state.neural.enabled}
+                  value={state.neural.style}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      neural: {
+                        ...s.neural,
+                        style: e.target.value as StudioState["neural"]["style"],
+                      },
+                    }))
+                  }
+                >
+                  {["Default", "Natural", "Cinematic"].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </label>
+              <span role="status">
+                {!isTauri()
+                  ? "Browser: color adjustments only"
+                  : !state.neural.enabled
+                    ? "Neural rendering off"
+                    : busy
+                      ? "Evaluating… previous image shown"
+                      : previewReady
+                        ? cap?.neural_rendering
+                        : "Neural result unavailable · check Settings"}
+              </span>
+            </div>
             <p className="adjustment-hint">
               {state.local.scope === "image"
                 ? "Applies to the whole image. Dashed box: zoom inspection only."
                 : "Applies inside the dashed box. Drag it to choose the area."}{" "}
-              Intensity scales tone and structure.
+              Provider parameters: 0–2, default 1. Tone and structure control
+              neural reconstruction; brightness is separate.
             </p>
             <div className="local-controls">
               {(["intensity", "tone", "structure"] as const).map((key, i) => (
@@ -698,8 +778,9 @@ export default function App() {
                   key={key}
                   label={["Intensity", "Tone", "Structure"][i]}
                   value={state.local[key]}
-                  min={key === "tone" ? -1 : 0}
-                  max={key === "intensity" ? 2.6 : key === "tone" ? 1 : 1.6}
+                  min={0}
+                  max={2}
+                  disabled={!state.neural.enabled}
                   step={0.01}
                   local
                   icon={[CircleDot, Circle, Triangle][i]}
@@ -713,9 +794,9 @@ export default function App() {
         </div>
         <aside className="right-panel">
           <div className="look">
-            <h2>Adjust Look</h2>
+            <h2>Color Adjustments</h2>
             <section className="style-section">
-              <h3>Style</h3>
+              <h3>Color preset</h3>
               <div className="styles">
                 {(["cinematic", "neutral", "natural"] as Style[]).map(
                   (style) => (
@@ -732,52 +813,11 @@ export default function App() {
                 )}
               </div>
             </section>
-            <section className="resolution">
-              <h3>Resolution</h3>
-              <div className="resolution-row">
-                <div className="slider-wrap">
-                  <input
-                    aria-label="Resolution"
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={state.processingResolution}
-                    style={
-                      {
-                        "--fill": state.processingResolution + "%",
-                      } as CSSProperties
-                    }
-                    onChange={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        processingResolution: +e.target.value,
-                      }))
-                    }
-                  />
-                  <div className="ticks" />
-                </div>
-                <span>
-                  <input
-                    aria-label="Resolution value"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={state.processingResolution}
-                    onChange={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        processingResolution: clamp(+e.target.value, 1, 100),
-                      }))
-                    }
-                  />
-                  %
-                </span>
-              </div>
-              <div className="range-labels">
-                <span>1%</span>
-                <span>100%</span>
-              </div>
-            </section>
+            <p className="adjustment-hint">
+              Original resolution · {dimensions.w} × {dimensions.h}
+              <br />
+              Neural upscaling is not enabled. Exports keep these dimensions.
+            </p>
             <div className="global-controls">
               {(Object.keys(icons) as (keyof Adjustments)[]).map((key) => (
                 <Slider
@@ -889,27 +929,55 @@ export default function App() {
                     ? "Native backend unavailable"
                     : "Browser worker · application color processing"}
               </dd>
-              <dt>Streamline</dt>
-              <dd>{cap?.streamline ?? "Not loaded"}</dd>
+
               <dt>DLSS 5 Neural Rendering</dt>
               <dd>{cap?.neural_rendering ?? "Unavailable"}</dd>
             </dl>
             <p className="notice">
               {cap?.detail ??
-                "The official Streamline 2.14.1 public package does not contain a Neural Rendering header or plugin. This build performs application color adjustments only. DLSS 5 has not executed."}
+                "Browser mode supports conventional color adjustments only. Use the Windows application with a separately installed Visual Enhancer v13.2 runtime for neural rendering."}
             </p>
+            <p>Runtime: {cap?.runtime_path || "Not configured"}</p>
+            <button
+              disabled={!isTauri()}
+              onClick={async () => {
+                try {
+                  const folder = await open({
+                    directory: true,
+                    title: "Select extracted Visual Enhancer v13.2 folder",
+                  });
+                  if (folder) {
+                    await invoke("configure_neural_runtime", { folder });
+                    setCap(await invoke<Capability>("capabilities"));
+                    setSourceRevision((v) => v + 1);
+                    notify("Runtime configured. Rendering the current image.");
+                  }
+                } catch (e) {
+                  notify(String(e));
+                }
+              }}
+            >
+              Select neural runtime folder
+            </button>
+            {cap?.neural_diagnostics?.ngx && (
+              <p>
+                Last evaluation: {cap.neural_diagnostics.feature_evaluations}{" "}
+                frame(s); NGX create {cap.neural_diagnostics.ngx.create_result},
+                evaluate {cap.neural_diagnostics.ngx.evaluate_result}.
+              </p>
+            )}
             <p>
               Ctrl+O opens an image. Paste or drop an image to load it. Drag the
               dashed box to inspect another area. Choose Selected area to limit
               tone and structure to that box, or Whole image to edit everywhere.
-              Intensity scales their effect; neutral tone and structure remain
-              unchanged. Drag the zoom header, scroll to magnify, or press Z to
-              restore the zoom panel.
+              Neural settings run through the installed provider. Color sliders
+              apply afterward. Drag the zoom header, scroll to magnify, or press
+              Z to restore the zoom panel.
             </p>
             <p>
               Exports retain source dimensions. Inputs are decoded as sRGB;
-              output is 8-bit sRGB. The resolution control is reserved for the
-              unavailable neural path and does not resize exports.
+              output is 8-bit sRGB. Small or odd-sized inputs are edge-padded
+              for the runtime, then cropped back without scaling.
             </p>
             <small>
               DLSS Image Studio 0.1.0 · Independent application, not affiliated

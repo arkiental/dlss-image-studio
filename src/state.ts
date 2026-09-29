@@ -10,6 +10,7 @@ export type Adjustments = {
 };
 export interface StudioState extends Adjustments {
   style: Style;
+  neural: { enabled: boolean; style: "Default" | "Natural" | "Cinematic" };
   processingResolution: number;
   local: {
     scope: "image" | "region";
@@ -26,6 +27,7 @@ export interface StudioState extends Adjustments {
 }
 export const defaults = (): StudioState => ({
   style: "neutral",
+  neural: { enabled: true, style: "Default" },
   processingResolution: 100,
   contrast: 0,
   gamma: 0,
@@ -35,9 +37,9 @@ export const defaults = (): StudioState => ({
   hue: 0,
   local: {
     scope: "image",
-    intensity: 1.3,
-    tone: 0,
-    structure: 0.8,
+    intensity: 1,
+    tone: 1,
+    structure: 1,
     region: { x: 0.08, y: 0.51, width: 0.14, height: 0.28 },
   },
   zoom: { visible: true, factor: 2.5, position: { x: 14, y: 6 } },

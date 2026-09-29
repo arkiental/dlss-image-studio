@@ -158,7 +158,7 @@ struct Backend {
   }
   void initialize() {
     std::string slStatus = "Not installed",
-                nrStatus = "Unavailable: public NR plugin/API missing";
+                nrStatus = "Streamline core only; neural provider managed by Studio";
     wchar_t exe[32768]{};
     GetModuleFileNameW(nullptr, exe, 32768);
     auto pluginDir = std::filesystem::path(exe).parent_path() / L"streamline";
@@ -328,13 +328,10 @@ struct Backend {
            std::to_string(desc.DedicatedVideoMemory / 1048576) +
            ",\"d3d12\":true,\"streamline\":\"" + escaped(slStatus) +
            "\",\"neural_rendering\":\"" + escaped(nrStatus) +
-           "\",\"detail\":\"Streamline 2.14.1 declares kFeatureDLSS_NR but its "
-           "public package lacks sl.dlss_nr.dll, the NR parameter header, and "
-           "a still-image integration contract. Application adjustments use "
-           "D3D12; DLSS 5 has not executed.\"}";
+           "\",\"detail\":\"D3D12 conventional color processing. Neural evaluation is managed by the external-provider adapter.\"}";
     write("[D3D12] GPU: " + utf8(desc.Description) +
           " Driver: " + driver.str());
-    write("[DLSS5] Evaluation: NOT EXECUTED - NR API/plugin unavailable");
+    write("[D3D12] Color backend initialized; neural evaluation is tracked separately");
   }
   void load(const uint8_t *rgba, uint32_t w, uint32_t h) {
     if (!rgba || !w || !h || w > 16384 || h > 16384 ||
@@ -403,8 +400,7 @@ struct Backend {
     uav.Format = d.Format;
     uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
     device->CreateUnorderedAccessView(output.Get(), nullptr, &uav, cpu);
-    write("[IMAGE] Source loaded; temporal history is unused because NR is "
-          "unavailable");
+    write("[IMAGE] Color input uploaded; neural processing is managed separately");
   }
   void process(const StudioParams &p, uint8_t *out, uint64_t size) {
     const auto started = std::chrono::steady_clock::now();

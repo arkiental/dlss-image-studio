@@ -1,6 +1,10 @@
 import type { StudioState } from "./state";
-// Browser preview fallback only. Native releases process the same equations through D3D12.
+// Conventional color processing only. Neural rendering is never approximated here.
 export function processPixels(input: ImageData, state: StudioState): ImageData {
+  if (state.neural.enabled)
+    throw new Error(
+      "Neural rendering requires the Windows app and configured runtime.",
+    );
   const out = new ImageData(
       new Uint8ClampedArray(input.data),
       input.width,
@@ -14,8 +18,7 @@ export function processPixels(input: ImageData, state: StudioState): ImageData {
     x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
   const angle = (state.hue * Math.PI) / 180,
     c = Math.cos(angle),
-    s = Math.sin(angle),
-    r = state.local.region;
+    s = Math.sin(angle);
   for (let y = 0; y < input.height; y++)
     for (let x = 0; x < input.width; x++) {
       const i = (y * input.width + x) * 4;
@@ -50,42 +53,6 @@ export function processPixels(input: ImageData, state: StudioState): ImageData {
           (0.587 - 0.587 * c - 1.05 * s) * b +
           (0.114 + 0.886 * c - 0.203 * s) * e,
       ];
-      if (
-        state.local.scope === "image" ||
-        (x / input.width >= r.x &&
-          x / input.width <= r.x + r.width &&
-          y / input.height >= r.y &&
-          y / input.height <= r.y + r.height)
-      ) {
-        const edge = Math.min(
-          (x / input.width - r.x) / r.width,
-          (r.x + r.width - x / input.width) / r.width,
-          (y / input.height - r.y) / r.height,
-          (r.y + r.height - y / input.height) / r.height,
-        );
-        const mask =
-          state.local.scope === "image"
-            ? 1
-            : Math.min(1, Math.max(0, edge * 20));
-        rgb = rgb.map((v, k) => {
-          const left = linear(
-              src[(y * input.width + Math.max(0, x - 1)) * 4 + k] / 255,
-            ),
-            right = linear(
-              src[
-                (y * input.width + Math.min(input.width - 1, x + 1)) * 4 + k
-              ] / 255,
-            );
-          return (
-            v +
-            mask *
-              state.local.intensity *
-              (state.local.tone * 0.1 +
-                (state.local.structure - 0.8) *
-                  (linear(src[i + k] / 255) - (left + right) / 2))
-          );
-        });
-      }
       for (let k = 0; k < 3; k++)
         d[i + k] = Math.round(
           Math.max(0, Math.min(1, srgb(Math.max(0, rgb[k])))) * 255,

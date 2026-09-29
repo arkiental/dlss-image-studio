@@ -36,16 +36,6 @@ float3 encode(float3 v) {
                      .299 - .299 * c + 1.250 * s, .587 - .587 * c - 1.050 * s,
                      .114 + .886 * c - .203 * s),
             rgb);
-  float2 uv = float2(p.xy) / float2(width, height);
-  if (whole_image > .5 || (all(uv >= float2(rx, ry)) && all(uv <= float2(rx + rw, ry + rh)))) {
-    float edge = min(min((uv.x - rx) / rw, (rx + rw - uv.x) / rw),
-                     min((uv.y - ry) / rh, (ry + rh - uv.y) / rh));
-    float3 a = linearize(source[uint2(p.x > 0 ? p.x - 1 : 0, p.y)].rgb),
-           b = linearize(source[uint2(min(width - 1, p.x + 1), p.y)].rgb);
-    float mask = whole_image > .5 ? 1 : saturate(edge * 20);
-    rgb += mask * intensity *
-           (tone * .1 +
-            (structure - .8) * (linearize(original.rgb) - (a + b) / 2));
-  }
+  // Neural enhancement is supplied by the external provider before color grading.
   output[p.xy] = float4(saturate(encode(rgb)), original.a);
 }

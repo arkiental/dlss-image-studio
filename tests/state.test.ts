@@ -11,8 +11,8 @@ describe("studio state", () => {
   it("has reproducible independent defaults", () => {
     const a = defaults();
     a.local.intensity = 0;
-    expect(defaults().local.intensity).toBe(1.3);
-    expect(defaults().local.structure).toBe(0.8);
+    expect(defaults().local.intensity).toBe(1);
+    expect(defaults().local.structure).toBe(1);
   });
   it("round trips persisted state", () =>
     expect(JSON.parse(JSON.stringify(defaults()))).toEqual(defaults()));

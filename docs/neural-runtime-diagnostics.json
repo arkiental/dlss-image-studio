@@ -1,0 +1,77 @@
+{
+  "adapter_luid": "00000000:0001471D",
+  "allocated_feature_instances": 1,
+  "bridge_abi_version": 6,
+  "bridge_frame_abi_max_version": 7,
+  "bridge_version": "1.5.0-temporal-guides-frameabi-v7-optional",
+  "composition": {
+    "color_strength": 1.0,
+    "cuda_mask_upload_bytes": 0,
+    "cuda_mask_uploads": 0,
+    "face_skin_protection": 0.0,
+    "grain_preservation": 0.0,
+    "mask": {
+      "active": false,
+      "feather_px": 0,
+      "feather_status": "inactive — no mask"
+    },
+    "tone_preservation": 0.0
+  },
+  "cuda_ordinal": 0,
+  "cuda_status": "ok",
+  "cuda_supported": true,
+  "decode_backend": "software",
+  "encode_backend": "cpu",
+  "feature_evaluations": 1,
+  "frames": 1,
+  "gpu_memory": {
+    "baseline_mib": 14769.0,
+    "peak_delta_mib": 650.8,
+    "peak_mib": 15419.9,
+    "samples": 6,
+    "scope": "total_adapter_used_memory",
+    "status": "sampled"
+  },
+  "gpu_mode": true,
+  "gpu_name": "NVIDIA GeForce RTX 4090",
+  "memory_path": "host_cuda_d3d12_shared",
+  "neural_dimensions": {
+    "height": 1008,
+    "width": 1560
+  },
+  "ngx": {
+    "create_result": "0x00000001",
+    "evaluate_result": "0x00000001"
+  },
+  "ngx_format": "rgba16f",
+  "nr_passes": 1,
+  "output_format": "PNG/8",
+  "pixel_format": "rgba8",
+  "resize_method": "none",
+  "scene_resets": 0,
+  "source_format": "PNG/8",
+  "temporal_stabilization": {
+    "cuda_input_wait_seconds": 0.0001431,
+    "d3d12_wait_seconds": 0.0259019,
+    "depth_bound": true,
+    "gpu_copy_in_seconds": 0.000049152,
+    "gpu_copy_out_seconds": 0.00001024,
+    "gpu_ngx_seconds": 0.003715072,
+    "gpu_timing_samples": 1,
+    "motion_backend": "gpu_lucas_kanade",
+    "motion_bound": true,
+    "motion_fallback": "bundled_gpu_lucas_kanade",
+    "motion_frames": 1,
+    "optical_flow_seconds": 0.0001187,
+    "reset_frames": 1,
+    "shimmer_suppression": 0.0,
+    "stabilization_seconds": 0.0,
+    "stabilized_frames": 0,
+    "stabilizer_backend": "native_gpu_residual"
+  },
+  "transfers": {
+    "download_bytes": 18869760,
+    "upload_bytes": 18869760
+  },
+  "working_format": "rgba8"
+}

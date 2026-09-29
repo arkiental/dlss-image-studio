@@ -692,3 +692,47 @@ input::-webkit-outer-spin-button {
     width: 48px;
   }
 }
+
+/* Space for explicit provider state without covering the image controls. */
+.left-column {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.neural-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.neural-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.neural-toolbar select {
+  color: var(--text);
+  background: #20201e;
+  border: 1px solid var(--border);
+  padding: 4px;
+  border-radius: 4px;
+}
+.neural-toolbar input {
+  accent-color: var(--gold);
+}
+.neural-toolbar span {
+  color: #bbb6aa;
+}
+input:disabled,
+select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.settings-dialog {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.settings-dialog dd,
+.settings-dialog p {
+  overflow-wrap: anywhere;
+}

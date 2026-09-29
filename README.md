@@ -1,74 +1,38 @@
 # DLSS Image Studio
 
-A Windows desktop image editor built with Tauri 2, React, TypeScript, Rust, and a C++ D3D12 compute backend. The interface follows the supplied 1536 × 1024 reference.
+A Windows image editor built with Tauri 2, React, TypeScript, Rust and D3D12. Neural rendering uses a separately installed **Visual Enhancer v13.2** runtime. Conventional color adjustments remain separate.
 
-**DLSS 5 Neural Rendering is not implemented or active in this release.** NVIDIA's public Streamline 2.14.1 package declares `kFeatureDLSS_NR`, but does not provide its plugin, parameter header, or integration guide. This application never labels its color processing as DLSS. See [the SDK investigation](DLSS_INTEGRATION.md).
+![Studio](docs/screenshots/native-neural.jpg)
 
-![Studio](docs/screenshots/studio-1536.png)
+## Setup
+
+Download and extract the complete [official Visual Enhancer v13.2 package](https://github.com/Merserk/dlss5-visual-enhancer/releases/tag/v13.2), review its licenses, then select its folder in Studio Settings. No proprietary runtime is bundled. See [integration details](DLSS_INTEGRATION.md).
+
+Intensity, Tone and Structure now call the provider, each with range 0–2 and default 1. Neural style is independent of color presets. The former brightness/detail substitutes have been removed. Studio requires successful NGX creation and evaluation diagnostics; failures never silently become ordinary filters.
 
 ## Features
 
-- Frameless, draggable Windows title bar with working window controls.
-- Ctrl+O, image drag-and-drop, and image paste through WebView2/browser clipboard events.
-- Non-destructive global contrast, gamma, vibrance, brightness, saturation and hue adjustments.
-- Cinematic, Neutral and Natural application presets.
-- Whole-image tone and detail adjustment, with explicit Selected area mode for a draggable feathered mask. Intensity scales tone and structure.
-- Movable full-resolution zoom inspection, wheel magnification, and Z to hide/show.
-- PNG, JPEG and TIFF exports at original dimensions, Windows image clipboard, and three-preset batch export.
-- D3D12 adapter enumeration, NVIDIA preference, real compute shaders, fences and diagnostics.
-- Optional signature-verified Streamline core initialization and `kFeatureDLSS_NR` support query.
-- Native asynchronous processing with debounce and stale-request rejection.
+- Full-image neural rendering by default; explicit optional feathered region mask.
+- Zoom inspects the same processed pixels as the main image and exports.
+- Separate contrast, gamma, vibrance, brightness, saturation and hue, plus three color presets.
+- Ctrl+O, image paste and drag-and-drop; draggable zoom, wheel magnification, Z to restore it.
+- Original-dimension PNG/JPEG/TIFF export, Windows clipboard, and three-color-preset batch export.
+- Local processing, cached neural results, runtime diagnostics and obsolete-preview rejection.
 
-## Build
+## Build and verification
 
-Read [BUILDING.md](BUILDING.md) for prerequisites.
+See [BUILDING.md](BUILDING.md). Run `npm ci`, `npm test`, and `npm run tauri build`. Browser development (`npm run dev`) is explicitly color-only. Hosted build success does not prove neural rendering.
+
+See the [RTX 4090 verification report](docs/NEURAL_VERIFICATION.md). To exercise the provider locally after configuring it:
 
 ```powershell
-npm ci
-npm run tauri dev
+cargo test --manifest-path src-tauri/Cargo.toml --release real_neural_pipeline -- --ignored --nocapture
 ```
 
-```powershell
-npm run tauri build
-```
+## Limits
 
-Installers are written to `src-tauri/target/release/bundle/`; the portable executable is `src-tauri/target/release/dlss-image-studio.exe`.
+Images are 8-bit sRGB. Original alpha and dimensions are retained; odd/small images are padded for evaluation then cropped back. JPEG drops alpha. HDR, metadata round-trip and ICC embedding are not implemented. Limits are 64 megapixels and 16384 pixels per side; GPU memory may impose lower limits. Neural upscaling, video and advanced provider controls are not exposed.
 
-## Structure
+Cold provider startup takes a few seconds. While processing, the previous image remains visible and exports are disabled. Files are not overwritten. Batch failure can leave completed exports. Logs are local at `%LOCALAPPDATA%/DLSS Image Studio/logs/studio.log`.
 
-```text
-.github/workflows/windows.yml  Windows tests, executable, MSI and NSIS builds
-src/
-  App.tsx                     UI and native command coordination
-  state.ts                    Typed state, presets, geometry, naming
-  style.css                   Reference-driven custom desktop styling
-  processing.ts               Explicit browser-only CPU color preview
-  worker.ts                   Browser preview worker
-src-tauri/
-  src/main.rs                 Validated commands, native serialization, export
-  build.rs                    CMake/Rust linking
-  capabilities/default.json   Narrow window/dialog permissions
-  tauri.conf.json              Window, CSP and bundle configuration
-native/dlss_backend/
-  include/backend.h           Stable C ABI
-  src/backend.cpp             DXGI, D3D12 and Streamline lifecycle
-  src/color.hlsl              Application color/local compute shader
-  tests/smoke.cpp             Real GPU identity/brightness/alpha/error test
-third_party/streamline/        Official MIT-licensed integration headers
-public/sample-car.png          Generated clean sample derived from the reference
-scripts/visual-check.mjs       Browser interaction and screenshot verification
-tests/state.test.ts            State, bounds, geometry, DPI and naming tests
-docs/                         Screenshots, QA notes and asset provenance
-```
-
-## Behavior and limits
-
-The resolution slider records a 1–100% neural processing request. Since NR is unavailable, it does not resample or otherwise change images. All current application adjustments and exports use source dimensions. Tone and structure apply to the whole image by default. In **Whole image** mode the dashed box only selects the zoom inspection area; moving or hiding the zoom does not change processing. Choose **Selected area** to use the rectangle as a feathered mask, never a crop. Intensity scales tone and structure; with tone at 0 and structure at 0.80, changing intensity alone has no effect. Preview, clipboard and exports use the same scope. Export waits until the current preview is ready. Tone and structure are application post-processing parameters, not NVIDIA parameters. Neutral defaults leave source pixels unchanged within 8-bit rounding; local structure is centered on the reference default of 0.80.
-
-Input is decoded by WebView2 into sRGB, with browser EXIF orientation handling, then uploaded once per source. Shader math uses 32-bit floats, explicit sRGB transfer functions and alpha preservation. Final buffers/exports are 8-bit sRGB; HDR, 16-bit export, metadata round-tripping, and ICC-profile embedding are not implemented. JPEG drops alpha. Source limits are 64 megapixels and 16384 pixels per dimension; actual available GPU memory can impose lower limits.
-
-Files are never overwritten. If an output already exists, select a new filename or folder. A failed batch may leave the presets completed before the error. Release binaries are unsigned by an application publisher; NVIDIA runtime signature verification is separate.
-
-There is no telemetry, shell permission, network processing service, or automatic SDK download in the application. Logs are local at `%LOCALAPPDATA%/DLSS Image Studio/logs/studio.log`.
-
-This is an independent application and is not affiliated with or endorsed by NVIDIA. DLSS and NVIDIA are their respective owner's trademarks.
+Independent application; not affiliated with NVIDIA or Merserk. Their trademarks and separately installed software remain subject to their owners' terms.
