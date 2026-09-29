@@ -24,6 +24,9 @@ import {
   Clipboard,
   Download,
   Layers,
+  Search,
+  Scan,
+  Eye,
 } from "lucide-react";
 import { invoke, isTauri, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -621,54 +624,37 @@ export default function App() {
             }}
           >
             <div className="image-toolbar">
-              <label>
-                <RangeInput
-                  label="Image zoom"
-                  min={1}
-                  max={10}
-                  step={0.1}
-                  value={view.scale}
-                  onValue={(v) => zoomImage(v)}
-                />
-              </label>
-              <span>{view.scale.toFixed(1)}×</span>
-              <button onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
-                Fit
+              <span className="view-label">Zoom</span>
+              <Search size={20} aria-hidden="true" />
+              <div className="slider-wrap view-slider">
+                <RangeInput label="Image zoom" min={1} max={10} step={0.1}
+                  value={view.scale} onValue={(v) => zoomImage(v)}
+                  style={{ "--accent": "var(--gold)", "--fill": `${((view.scale - 1) / 9) * 100}%` } as CSSProperties} />
+                <div className="ticks" />
+              </div>
+              <output className="view-value">{view.scale.toFixed(1)}×</output>
+              <button className="fit-view" onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+                <Scan size={20} aria-hidden="true" /> Fit
               </button>
-              <label>
-                <input
-                  type="checkbox"
-                  aria-label="Show zoom inspector"
+              <span className="view-divider" />
+              <span className="view-label">Detail</span>
+              <Eye size={20} aria-hidden="true" />
+              <label className="inspector-switch" title="Show zoom inspector">
+                <input type="checkbox" aria-label="Show zoom inspector"
                   checked={state.zoom.visible}
-                  onChange={(e) =>
-                    setState((s) => ({
-                      ...s,
-                      zoom: { ...s.zoom, visible: e.target.checked },
-                    }))
-                  }
-                />{" "}
+                  onChange={(e) => setState((s) => ({ ...s, zoom: { ...s.zoom, visible: e.target.checked } }))} />
+                <span aria-hidden="true" />
               </label>
-              {state.zoom.visible && (
-                <>
-                  <label>
-                    Detail{" "}
-                    <RangeInput
-                      label="Inspector zoom factor"
-                      min={1}
-                      max={10}
-                      step={0.1}
-                      value={state.zoom.factor}
-                      onValue={(v) =>
-                        setState((s) => ({
-                          ...s,
-                          zoom: { ...s.zoom, factor: v },
-                        }))
-                      }
-                    />
-                  </label>
-                  <span>{state.zoom.factor.toFixed(1)}×</span>
-                </>
-              )}
+              {state.zoom.visible && <>
+                <div className="slider-wrap view-slider">
+                  <RangeInput label="Inspector zoom factor" min={1} max={10} step={0.1}
+                    value={state.zoom.factor}
+                    onValue={(v) => setState((s) => ({ ...s, zoom: { ...s.zoom, factor: v } }))}
+                    style={{ "--accent": "var(--gold)", "--fill": `${((state.zoom.factor - 1) / 9) * 100}%` } as CSSProperties} />
+                  <div className="ticks" />
+                </div>
+                <output className="view-value">{state.zoom.factor.toFixed(1)}×</output>
+              </>}
             </div>
             <div
               className="viewport"

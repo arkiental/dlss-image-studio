@@ -42,7 +42,7 @@ export const defaults = (): StudioState => ({
     structure: 1,
     region: { x: 0.08, y: 0.51, width: 0.14, height: 0.28 },
   },
-  zoom: { visible: true, factor: 2.5, position: { x: 48, y: 112 } },
+  zoom: { visible: true, factor: 2.5, position: { x: 48, y: 150 } },
 });
 export const presets: Record<Style, Adjustments> = {
   neutral: {

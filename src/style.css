@@ -753,7 +753,7 @@ select:disabled {
 /* View controls do not alter processed pixels or exported dimensions. */
 .image-panel {
   position: relative;
-  padding-top: 46px;
+  padding-top: 82px;
 }
 .viewport {
   overflow: hidden;
@@ -761,30 +761,40 @@ select:disabled {
 }
 .image-toolbar {
   position: absolute;
-  top: 9px;
+  top: 8px;
   left: 12px;
   right: 12px;
+  height: 62px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 14px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #171916;
+  font-size: 13px;
   white-space: nowrap;
 }
-.image-toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.image-toolbar input[type="range"] {
-  width: 92px;
-  accent-color: var(--gold);
-}
-.image-toolbar input[type="checkbox"] {
-  accent-color: var(--gold);
-}
-.image-toolbar button {
-  padding: 3px 7px;
-  font-size: 12px;
+.image-toolbar > svg { flex-shrink: 0; }
+.view-label { text-transform: uppercase; letter-spacing: 2px; font-size: 10px; color: #dbc69c; }
+.image-toolbar .view-slider { flex: 1; min-width: 50px; margin: 0; }
+.image-toolbar .view-slider input { margin: 17px 0 12px; }
+.image-toolbar .ticks { height: 7px; }
+.view-value { min-width: 54px; text-align: center; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; background: #111310; font-variant-numeric: tabular-nums; }
+.image-toolbar .fit-view { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 8px 2px; font-size: 13px; }
+.view-divider { height: 34px; width: 1px; background: #706047; }
+.inspector-switch { position: relative; display: block; width: 38px; height: 22px; flex-shrink: 0; cursor: pointer; }
+.inspector-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.inspector-switch span { position: absolute; inset: 0; border-radius: 12px; background: #464747; border: 1px solid #777367; }
+.inspector-switch span::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #eee9db; transition: transform 120ms; }
+.inspector-switch input:checked + span { background: var(--gold); border-color: var(--gold); }
+.inspector-switch input:checked + span::after { transform: translateX(16px); }
+.inspector-switch input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 3px; }
+@media (max-width: 1200px) {
+  .image-toolbar { gap: 8px; padding: 0 9px; }
+  .view-label { letter-spacing: 1px; }
+  .view-value { min-width: 42px; padding: 7px 4px; }
+  .image-toolbar > svg { width: 16px; }
 }
 input[type="range"] {
   touch-action: none;
