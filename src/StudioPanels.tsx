@@ -1,3 +1,5 @@
+import { LutPanel } from "./LutPanel";
+import { collectLuts, restoreLuts, prepareLut } from "./lutLibrary";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -129,13 +131,32 @@ export function Variants({
     setThumbs({});
     worker.onmessage = ({ data }) =>
       setThumbs((v) => ({ ...v, [data.id]: imageUrl(data.image) }));
-    worker.postMessage({
-      image: small
-        .getContext("2d")!
-        .getImageData(0, 0, small.width, small.height),
-      items: presets,
-    });
-    return () => worker.terminate();
+    const image = small
+      .getContext("2d")!
+      .getImageData(0, 0, small.width, small.height);
+    let active = true;
+    void Promise.allSettled(
+      presets.map(async (item) => ({
+        id: item.id,
+        lut: await prepareLut(item.state.finish),
+      })),
+    )
+      .then((luts) => {
+        const ready = luts.flatMap((v) =>
+          v.status === "fulfilled" ? [v.value] : [],
+        );
+        if (active)
+          worker.postMessage({
+            image,
+            items: presets.filter((v) => ready.some((r) => r.id === v.id)),
+            luts: Object.fromEntries(ready.map((v) => [v.id, v.lut])),
+          });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      worker.terminate();
+    };
   }, [d.source, presets]);
   const captureThumbnail = () => {
     if (!d.image || !d.ready) return undefined;
@@ -803,6 +824,7 @@ export function Panels({
   if (tab === "Refine")
     return (
       <>
+        <LutPanel d={d} />
         <Group
           name="Enhance"
           initial
@@ -1319,7 +1341,9 @@ function PresetPanel({ d }: { d: Document }) {
         filters: [{ name: "Studio presets", extensions: ["dlsspresets"] }],
       });
       if (path) {
-        const raw = JSON.parse(await invoke<string>("read_presets", { path }));
+        const data = JSON.parse(await invoke<string>("read_presets", { path }));
+        const raw = Array.isArray(data) ? data : data.presets;
+        if (!Array.isArray(data)) await restoreLuts(data.luts);
         if (!Array.isArray(raw) || raw.length > 100)
           throw Error("Invalid preset library");
         d.setPresets((v) => [
@@ -1344,7 +1368,11 @@ function PresetPanel({ d }: { d: Document }) {
       if (path)
         await invoke("write_presets", {
           path,
-          content: JSON.stringify(d.presets),
+          content: JSON.stringify({
+            version: 1,
+            presets: d.presets,
+            luts: await collectLuts(d.presets.map((v) => v.state)),
+          }),
         });
     } catch (e) {
       d.setError(String(e));

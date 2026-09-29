@@ -51,6 +51,7 @@ parts = [
     'Visual Enhancer, Neuroframe and NVIDIA neural-runtime binaries are NOT bundled.\n'
     'Their separate installation remains subject to their distributors’ terms.\n'
 ]
+parts.append('Bundled creative LUTs: 49 by Austin Barrett / Striped Purple (MIT), one Classic Film by Alex Jordan via OpenShot / Fresh LUTs (CC0-1.0). Original embedded copyright notices are retained. Source URLs and SHA-256 identities are recorded in public/luts/manifest.json.\n\n' + (ROOT / 'public/luts/STRIPED_PURPLE_LICENSE.txt').read_text(encoding='utf-8') + '\n\n' + (ROOT / 'public/luts/CC0-1.0.txt').read_text(encoding='utf-8'))
 parts.append('Included NVIDIA Streamline headers (MIT):\n' +
              (ROOT / 'third_party/streamline/LICENSE.txt').read_text(encoding='utf-8'))
 parts.append('Source packages (unmodified open-source dependencies):\n' + '\n'.join(f'{name} {version}: https://crates.io/crates/{name}/{version}' if not str(folder).startswith(str(ROOT / 'node_modules')) else f'{name} {version}: https://www.npmjs.com/package/{name}/v/{version}' for name,version,_,folder in sorted(packages)))

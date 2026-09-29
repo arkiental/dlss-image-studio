@@ -1,3 +1,4 @@
+import { prepareLut, collectLuts, restoreLuts } from "./lutLibrary";
 import { useEffect, useRef, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -193,9 +194,12 @@ export function useStudio() {
     const timer = setTimeout(
       async () => {
         try {
+          const snapshot = current.current;
+          const lut = await prepareLut(snapshot.finish);
+          if (id !== version.current || sid !== sourceId.current) return;
           if (isTauri()) {
             const bytes = await invoke<ArrayBuffer>("finish_preview", {
-              state: current.current,
+              state: snapshot,
               sourceId: sid,
               max: dragging ? 640 : 0,
             });
@@ -208,7 +212,8 @@ export function useStudio() {
               id,
               key: renderKey,
               image: source,
-              state: current.current,
+              state: snapshot,
+              lut,
             });
         } catch (e) {
           if (id !== version.current) return;
@@ -367,7 +372,14 @@ export function useStudio() {
             filters: [{ name: "Studio Project", extensions: ["dlssproj"] }],
           })) || "";
       if (!path) return;
+      const luts = await collectLuts([
+        current.current,
+        ...snapshots.map((v) => v.state),
+        ...historyRef.current.map((v) => v.state),
+        ...presets.map((v) => v.state),
+      ]);
       const p: Project = {
+        luts,
         version: 1,
         sourcePath: info.path,
         inputSpace: info.space === "ICC to linear sRGB" ? "auto" : info.space,
@@ -398,6 +410,7 @@ export function useStudio() {
         undefined;
       if (!path) return;
       const p = parseProject(await invoke<string>("read_project", { path }));
+      await restoreLuts(p.luts);
       if (!(await loadNative(p.sourcePath, p.inputSpace || "auto", true)))
         return;
       for (const pass of p.passes)
@@ -523,6 +536,7 @@ export function useStudio() {
           .split(/[\\/]/)
           .pop()!
           .replace(/\.[^.]+$/, "");
+        await prepareLut((item.state || base).finish);
         await invoke("batch_render", {
           path: item.path,
           destination: `${batchFolder}/${stem}${config.suffix}.${config.format}`,
@@ -624,6 +638,7 @@ export function useStudio() {
         }
         return;
       }
+      await prepareLut(current.current.finish);
       if (kind === "clipboard") {
         await invoke("copy_finished", {
           state: current.current,
@@ -649,6 +664,7 @@ export function useStudio() {
               },
             }));
         for (const item of variants) {
+          await prepareLut(item.state.finish);
           const name = item.name.replace(/[<>:"/\\|?*]/g, "_");
           const path = `${folder}/${stem}_${name}.${output.format}`;
           await invoke("export_finished", {

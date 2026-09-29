@@ -103,7 +103,12 @@
     "soloPass": "",
     "passLow": 0,
     "passHigh": 1,
-    "passInvert": false
+    "passInvert": false,
+    "lutId": "",
+    "lutEnabled": false,
+    "lutStrength": 100,
+    "lutSpace": "srgb",
+    "lutOutside": "preserve"
   },
   "style": "neutral",
   "neural": {

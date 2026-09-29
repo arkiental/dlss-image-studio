@@ -20,6 +20,7 @@ rayon = "1"
 exr = "1"
 moxcms = { version = "0.8", features = ["extended_range"] }
 tiff = "0.11"
+sha2 = "0.10"
 
 [profile.release]
 codegen-units = 1

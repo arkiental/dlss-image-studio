@@ -1,3 +1,4 @@
+import type { Lut } from "./lut";
 import { finishBrowser } from "./finishBrowser";
 import { finishDefaults } from "./finish";
 import type { StudioState } from "./state";
@@ -5,6 +6,7 @@ self.onmessage = ({
   data,
 }: MessageEvent<{
   image: ImageData;
+  luts?: Record<string, Lut>;
   items: { id: string; state: StudioState }[];
 }>) => {
   for (const item of data.items) {
@@ -28,7 +30,7 @@ self.onmessage = ({
       };
       self.postMessage({
         id: item.id,
-        image: finishBrowser(data.image, state),
+        image: finishBrowser(data.image, state, data.luts?.[item.id]),
       });
     } catch {
       /* A preset requiring native passes has no grading thumbnail. */

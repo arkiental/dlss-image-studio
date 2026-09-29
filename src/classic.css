@@ -453,3 +453,34 @@
     height: 6px;
   }
 }
+
+.lut-heading,
+.lut-import,
+.lut-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0;
+}
+.lut-heading label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.lut-heading span,
+.lut-import span {
+  color: #aaa79c;
+  font-size: 12px;
+}
+.studio .lut-library {
+  width: 100%;
+  max-width: 100%;
+  padding: 9px;
+}
+.lut-option select {
+  max-width: 180px;
+}
+.lut-credit {
+  color: #aaa79c;
+}

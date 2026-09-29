@@ -1,3 +1,4 @@
+import { applyLut, type Lut } from "./lut";
 import type { StudioState } from "./state";
 import type { MaskLayer, Point } from "./finish";
 const lin = (v: number) =>
@@ -246,7 +247,7 @@ const hueColor = (h: number) => {
     [1, 0, x],
   ][Math.floor(h)];
 };
-export function finishBrowser(input: ImageData, s: StudioState) {
+export function finishBrowser(input: ImageData, s: StudioState, lut?: Lut) {
   if (s.neural.enabled)
     throw Error(
       "Neural rendering requires the Windows app and configured runtime.",
@@ -258,6 +259,8 @@ export function finishBrowser(input: ImageData, s: StudioState) {
     throw Error("Render passes and depth operations require the Windows app.");
   if (a.masked && !a.masks.some((m) => m.enabled))
     throw Error("Mask scope requires an enabled mask");
+  const useLut = !!(a.lutEnabled && a.lutId && a.lutStrength > 0);
+  if (useLut && !lut) throw Error("Selected LUT is unavailable");
   let px = new Float32Array(input.data.length);
   for (let i = 0; i < px.length; i += 4) {
     for (let k = 0; k < 3; k++) px[i + k] = lin(input.data[i + k] / 255);
@@ -353,6 +356,16 @@ export function finishBrowser(input: ImageData, s: StudioState) {
       px[i + k] = lin(
         curveValue(a.curves[k + 1], curveValue(a.curves[0], enc(px[i + k]))),
       );
+    if (useLut) {
+      const rgb = applyLut(
+        lut!,
+        [px[i], px[i + 1], px[i + 2]],
+        a.lutStrength,
+        a.lutSpace,
+        a.lutOutside,
+      );
+      for (let k = 0; k < 3; k++) px[i + k] = rgb[k];
+    }
   }
   if (a.bloom) {
     const bright = px.slice();

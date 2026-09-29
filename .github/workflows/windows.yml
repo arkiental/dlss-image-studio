@@ -32,6 +32,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'UI race checks failed' }
             node scripts/studio-check.mjs
             if ($LASTEXITCODE -ne 0) { throw 'Workspace UI checks failed' }
+            node scripts/lut-check.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'LUT UI checks failed' }
           } finally { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       - run: npm run tauri build

@@ -1,3 +1,5 @@
+import type { LutSpace } from "./lut";
+import type { LutAsset } from "./lutLibrary";
 import { curveValue } from "./finishBrowser";
 import type { StudioState, Rect } from "./state";
 export type Point = { x: number; y: number };
@@ -36,6 +38,11 @@ export interface MaskLayer {
   dodgeMode: "exposure" | "highlights" | "shadows" | "saturation";
 }
 export interface Finish {
+  lutId: string;
+  lutEnabled: boolean;
+  lutStrength: number;
+  lutSpace: LutSpace;
+  lutOutside: "preserve" | "clamp";
   exposure: number;
   highlights: number;
   shadows: number;
@@ -80,6 +87,11 @@ export interface Finish {
   passInvert: boolean;
 }
 export const finishDefaults = (): Finish => ({
+  lutId: "",
+  lutEnabled: false,
+  lutStrength: 100,
+  lutSpace: "srgb",
+  lutOutside: "preserve",
   exposure: 0,
   highlights: 0,
   shadows: 0,
@@ -187,6 +199,7 @@ export interface NamedState {
   thumbnail?: string;
 }
 export interface Project {
+  luts?: LutAsset[];
   version: 1;
   sourcePath: string;
   inputSpace?: string;
@@ -205,6 +218,17 @@ export function normalizeState(value: unknown): StudioState {
   if (!s.local || !s.neural || !s.zoom)
     throw Error("Missing adjustment groups");
   s.finish = { ...finishDefaults(), ...s.finish };
+  if (
+    typeof s.finish.lutId !== "string" ||
+    (s.finish.lutId && !/^[a-f0-9]{64}$/.test(s.finish.lutId)) ||
+    typeof s.finish.lutEnabled !== "boolean" ||
+    !Number.isFinite(s.finish.lutStrength) ||
+    s.finish.lutStrength < 0 ||
+    s.finish.lutStrength > 100 ||
+    !["srgb", "rec709", "linear"].includes(s.finish.lutSpace) ||
+    !["preserve", "clamp"].includes(s.finish.lutOutside)
+  )
+    throw Error("Invalid LUT settings");
   s.finish.masks = (s.finish.masks || []).map((m) => ({
     ...m,
     strokeOps: m.strokeOps || [],
@@ -335,6 +359,17 @@ export function blendPreset(
           : mix(v, preset.finish.grade[i][k]),
       ),
     );
+  if ((part === "all" || part === "color") && t > 0) {
+    const f = preset.finish;
+    s.finish.lutId = f.lutId;
+    s.finish.lutEnabled = f.lutEnabled;
+    s.finish.lutSpace = f.lutSpace;
+    s.finish.lutOutside = f.lutOutside;
+    s.finish.lutStrength =
+      base.finish.lutId === f.lutId && base.finish.lutEnabled
+        ? mix(base.finish.lutStrength, f.lutStrength)
+        : f.lutStrength * t;
+  }
   if (part === "all" || part === "detail") {
     for (const k of ["intensity", "tone", "structure"] as const)
       s.local[k] = mix(base.local[k], preset.local[k]);

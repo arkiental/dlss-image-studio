@@ -41,6 +41,7 @@ fn validate(value: &serde_json::Value) -> Result<(), String> {
         }
         Ok(())
     }
+    validate_luts(&value["luts"])?;
     state(&value["state"])?;
     for (field, limit) in [("snapshots", 64), ("history", 100), ("presets", 100)] {
         if let Some(list) = value[field].as_array() {
@@ -62,6 +63,31 @@ fn validate(value: &serde_json::Value) -> Result<(), String> {
     }
     Ok(())
 }
+fn validate_luts(value: &serde_json::Value) -> Result<(), String> {
+    if value.is_null() {
+        return Ok(());
+    }
+    let assets = value.as_array().ok_or("Invalid embedded LUT library")?;
+    if assets.len() > 128 {
+        return Err("Too many embedded LUTs".into());
+    }
+    let mut bytes = 0;
+    for a in assets {
+        let text = a["text"].as_str().ok_or("Missing embedded LUT data")?;
+        bytes += text.len();
+        if bytes > 48_000_000 {
+            return Err("Embedded LUTs exceed 48 MB".into());
+        }
+        if a["id"].as_str() != Some(crate::lut::digest(text).as_str())
+            || !["srgb", "rec709", "linear"].contains(&a["space"].as_str().unwrap_or(""))
+            || a["name"].as_str().is_none_or(|n| n.len() > 1024)
+        {
+            return Err("Invalid embedded LUT metadata or checksum".into());
+        }
+        crate::lut::parse(text)?;
+    }
+    Ok(())
+}
 #[tauri::command]
 pub async fn read_project(app: tauri::AppHandle, path: PathBuf) -> Result<String, String> {
     if !app.asset_protocol_scope().is_allowed(&path)
@@ -73,8 +99,8 @@ pub async fn read_project(app: tauri::AppHandle, path: PathBuf) -> Result<String
     }
     check(&app, &path)?;
     let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    if text.len() > 10_000_000 {
-        return Err("Project exceeds 10 MB".into());
+    if text.len() > 64_000_000 {
+        return Err("Project exceeds 64 MB".into());
     }
     let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
     validate(&v)?;
@@ -108,8 +134,8 @@ pub async fn write_project(
     if path.extension().and_then(|s| s.to_str()) != Some("dlssproj") {
         return Err("Use .dlssproj for Studio projects".into());
     }
-    if content.len() > 10_000_000 {
-        return Err("Project exceeds 10 MB".into());
+    if content.len() > 64_000_000 {
+        return Err("Project exceeds 64 MB".into());
     }
     let v = serde_json::from_str(&content).map_err(|e| e.to_string())?;
     validate(&v)?;
@@ -160,7 +186,7 @@ mod tests {
 pub async fn read_presets(app: tauri::AppHandle, path: PathBuf) -> Result<String, String> {
     check(&app, &path)?;
     let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    if text.len() > 5_000_000 {
+    if text.len() > 64_000_000 {
         return Err("Preset file too large".into());
     }
     Ok(text)
@@ -174,6 +200,13 @@ pub async fn write_presets(
     check(&app, &path)?;
     if path.extension().and_then(|s| s.to_str()) != Some("dlsspresets") {
         return Err("Use .dlsspresets".into());
+    }
+    if content.len() > 64_000_000 {
+        return Err("Preset file exceeds 64 MB".into());
+    }
+    let value: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    if !value.is_array() {
+        validate_luts(&value["luts"])?;
     }
     use std::io::Write;
     std::fs::OpenOptions::new()

@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod finish;
+mod lut;
 mod neural;
 mod projects;
 use serde::Deserialize;
@@ -750,6 +751,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            lut::register_lut,
             startup_file,
             sample_source,
             mask_overlay,

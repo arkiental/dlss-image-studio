@@ -1,0 +1,503 @@
+[
+  {
+    "id": "e44462286b40a8f9be2b25a6566c635c857ed9ddf56e547306362ae7e978934b",
+    "name": "Amber Haze",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Amber%20Haze.cube",
+    "file": "e44462286b40a8f9be2b25a6566c635c857ed9ddf56e547306362ae7e978934b.cube.gz"
+  },
+  {
+    "id": "75a0c3e8c5fc680b9b8abbda3d40a664054d269c9ac73365f5274ec204325cb5",
+    "name": "Arcade Dayz",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Arcade%20Dayz.cube",
+    "file": "75a0c3e8c5fc680b9b8abbda3d40a664054d269c9ac73365f5274ec204325cb5.cube.gz"
+  },
+  {
+    "id": "096b145d3f99e6cd6047fe377ff50c3becf1f4d325f8981200865768e3c03b72",
+    "name": "Blow Me Down",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Blow%20Me%20Down.cube",
+    "file": "096b145d3f99e6cd6047fe377ff50c3becf1f4d325f8981200865768e3c03b72.cube.gz"
+  },
+  {
+    "id": "17458c993a81e9c1c87fd294e0cc1bfb444215127549ea48a6a130ea11a7752b",
+    "name": "Caramel Plum Cake",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Caramel%20Plum%20Cake.cube",
+    "file": "17458c993a81e9c1c87fd294e0cc1bfb444215127549ea48a6a130ea11a7752b.cube.gz"
+  },
+  {
+    "id": "57be414180f8dfb8e014dc10135fe9ddd92cfcb542100867a60ced32a6a55ba4",
+    "name": "Cherry Champagne",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Cherry%20Champagne.cube",
+    "file": "57be414180f8dfb8e014dc10135fe9ddd92cfcb542100867a60ced32a6a55ba4.cube.gz"
+  },
+  {
+    "id": "f2d0a08a9bb6dced32cabac74b3bde06a9f6deed385278b6caaea59b0d703998",
+    "name": "Pendleton",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Pendleton.cube",
+    "file": "f2d0a08a9bb6dced32cabac74b3bde06a9f6deed385278b6caaea59b0d703998.cube.gz"
+  },
+  {
+    "id": "6cda380fd2b01ae1f3638ab275eee31a633d2e5628f654377a61b81c0f2d2bd3",
+    "name": "Polaroid Mint Cream",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Polaroid%20Mint%20Cream.cube",
+    "file": "6cda380fd2b01ae1f3638ab275eee31a633d2e5628f654377a61b81c0f2d2bd3.cube.gz"
+  },
+  {
+    "id": "310086861c8bbe7c5fd85a67b5166dc8ece84323f379adbbbdf11bc391a0dee5",
+    "name": "Sugar Plums",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Sugar%20Plums.cube",
+    "file": "310086861c8bbe7c5fd85a67b5166dc8ece84323f379adbbbdf11bc391a0dee5.cube.gz"
+  },
+  {
+    "id": "4a8b5b0b9c351d6df88edc7f88d5a05948ac879eced134b60909194705854295",
+    "name": "Turquoise",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Turquoise.cube",
+    "file": "4a8b5b0b9c351d6df88edc7f88d5a05948ac879eced134b60909194705854295.cube.gz"
+  },
+  {
+    "id": "2149f8695dacd8caf829a3035bdc4084f4f2ad9d09cc1bbbf3083b769225ddc8",
+    "name": "Veggie Crisps",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Veggie%20Crisps.cube",
+    "file": "2149f8695dacd8caf829a3035bdc4084f4f2ad9d09cc1bbbf3083b769225ddc8.cube.gz"
+  },
+  {
+    "id": "214de630ec4084e717dd05f83ba3ea9e8754d5c08e3511f267c11a603fff57a0",
+    "name": "Woelfelly Neon",
+    "category": "Avant Garde",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Avant%20Garde/Striped%20Purple%20-%20Woelfelly%20Neon.cube",
+    "file": "214de630ec4084e717dd05f83ba3ea9e8754d5c08e3511f267c11a603fff57a0.cube.gz"
+  },
+  {
+    "id": "2ae2f4c62d028e41cf132f0d87f9098240fb8232195e602ed316c94cc0d38538",
+    "name": "1910s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201910s.cube",
+    "file": "2ae2f4c62d028e41cf132f0d87f9098240fb8232195e602ed316c94cc0d38538.cube.gz"
+  },
+  {
+    "id": "8f4f6ece25f0979b952c77e0d62a0e695310201a882fa8d7002471af0ff430f4",
+    "name": "1920s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201920s.cube",
+    "file": "8f4f6ece25f0979b952c77e0d62a0e695310201a882fa8d7002471af0ff430f4.cube.gz"
+  },
+  {
+    "id": "a82f33eaeb5e834c15d845e3ce2cda26d9f2aadb179af3dd25b79cceec838bf9",
+    "name": "1930s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201930s.cube",
+    "file": "a82f33eaeb5e834c15d845e3ce2cda26d9f2aadb179af3dd25b79cceec838bf9.cube.gz"
+  },
+  {
+    "id": "d568987e472432d63afba500d4daa26022c86d1db1739056c19431e5175baee7",
+    "name": "1940s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201940s.cube",
+    "file": "d568987e472432d63afba500d4daa26022c86d1db1739056c19431e5175baee7.cube.gz"
+  },
+  {
+    "id": "584b6b82a3841e1ca39e3fc82683499d18f52705e374146a08b500b711b5f425",
+    "name": "1950s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201950s.cube",
+    "file": "584b6b82a3841e1ca39e3fc82683499d18f52705e374146a08b500b711b5f425.cube.gz"
+  },
+  {
+    "id": "8991e4ab8d919812cf694cef4e7c5ab595e0d06aa2ee2b11824bef1597a3d316",
+    "name": "1960s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201960s.cube",
+    "file": "8991e4ab8d919812cf694cef4e7c5ab595e0d06aa2ee2b11824bef1597a3d316.cube.gz"
+  },
+  {
+    "id": "db73b9376584c570b5d30b27e5256b55e3c4047ddc0f9792e70074bb75a5d620",
+    "name": "1970s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201970s.cube",
+    "file": "db73b9376584c570b5d30b27e5256b55e3c4047ddc0f9792e70074bb75a5d620.cube.gz"
+  },
+  {
+    "id": "1efab4b550fa88e157475ab35521af70e8d71e1139d8e9dae49e8dcbd0001270",
+    "name": "1980_s",
+    "category": "Cinema Through The Ages",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Cinema%20Through%20The%20Ages/Striped%20Purple%20-%201980_s.cube",
+    "file": "1efab4b550fa88e157475ab35521af70e8d71e1139d8e9dae49e8dcbd0001270.cube.gz"
+  },
+  {
+    "id": "1f38f918edfa0c089ab41fdb4564b03bcfc4ff82b432205ed496f412bc094511",
+    "name": "Aricha Blend",
+    "category": "Drink it in!",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Drink%20it%20in%21/Striped%20Purple%20-%20Aricha%20Blend.cube",
+    "file": "1f38f918edfa0c089ab41fdb4564b03bcfc4ff82b432205ed496f412bc094511.cube.gz"
+  },
+  {
+    "id": "712b84a0a3b0f094712d5750754ff7d29d5413d4c692fdbb5bf0f67f5233fa63",
+    "name": "Blue Lagoon",
+    "category": "Drink it in!",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Drink%20it%20in%21/Striped%20Purple%20-%20Blue%20Lagoon.cube",
+    "file": "712b84a0a3b0f094712d5750754ff7d29d5413d4c692fdbb5bf0f67f5233fa63.cube.gz"
+  },
+  {
+    "id": "0933bdd41059b2ef8827fc3a40b269bce4d8d29a03554ddd555e7ca1d4f8e528",
+    "name": "Horchata",
+    "category": "Drink it in!",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Drink%20it%20in%21/Striped%20Purple%20-%20Horchata.cube",
+    "file": "0933bdd41059b2ef8827fc3a40b269bce4d8d29a03554ddd555e7ca1d4f8e528.cube.gz"
+  },
+  {
+    "id": "30f07919e12e7d9f2d676dc8b9de5d6124d7969955f8a264e56de3f16349a3ab",
+    "name": "Vanilla Bean",
+    "category": "Drink it in!",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Drink%20it%20in%21/Striped%20Purple%20-%20Vanilla%20Bean.cube",
+    "file": "30f07919e12e7d9f2d676dc8b9de5d6124d7969955f8a264e56de3f16349a3ab.cube.gz"
+  },
+  {
+    "id": "c511d1e650d7911e7e66a0c12b6d1d59cb3b375dabd6f2bc35b5ff9c2d38e5be",
+    "name": "Infrared 2",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Infrared/Infrared%202.cube",
+    "file": "c511d1e650d7911e7e66a0c12b6d1d59cb3b375dabd6f2bc35b5ff9c2d38e5be.cube.gz"
+  },
+  {
+    "id": "9512679d708821b26b9e2d54ceb152414669c3dd5014313d864a7ea1e3286f4d",
+    "name": "Infrared",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Infrared/Striped%20Purple%20-%20Infrared.cube",
+    "file": "9512679d708821b26b9e2d54ceb152414669c3dd5014313d864a7ea1e3286f4d.cube.gz"
+  },
+  {
+    "id": "e4f0872b25081f97dae1da0cb39f08e4c177952032aca4f158ecc395840b555b",
+    "name": "Lomochrome Purple 2",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Lomography/Lomochrome%20Purple%202.cube",
+    "file": "e4f0872b25081f97dae1da0cb39f08e4c177952032aca4f158ecc395840b555b.cube.gz"
+  },
+  {
+    "id": "7880bcca1ae436dc2fca7602653003ea988d5bb6dbecbccf68fe8587a876bb06",
+    "name": "Lomochrome Purple 3",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Lomography/Lomochrome%20Purple%203.cube",
+    "file": "7880bcca1ae436dc2fca7602653003ea988d5bb6dbecbccf68fe8587a876bb06.cube.gz"
+  },
+  {
+    "id": "3ec75794a488509a15d5b0b2af1e6ab82228b1a2facacfa0225520f6ea1cf648",
+    "name": "Lomochrome Purple 4",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Lomography/Lomochrome%20Purple%204.cube",
+    "file": "3ec75794a488509a15d5b0b2af1e6ab82228b1a2facacfa0225520f6ea1cf648.cube.gz"
+  },
+  {
+    "id": "23fadae0687f7d34102997b4ec861bc0239eed7372821e883e13bee339cca114",
+    "name": "Lomochrome Purple 5",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Lomography/Lomochrome%20Purple%205.cube",
+    "file": "23fadae0687f7d34102997b4ec861bc0239eed7372821e883e13bee339cca114.cube.gz"
+  },
+  {
+    "id": "3be1dff2435154b5e7e961b0e4db9b83a8a2831ede8a6f17c6eba2ac27ede489",
+    "name": "Lomochrome Purple",
+    "category": "Film Simulations",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Film%20Simulations/Lomography/Lomochrome%20Purple.cube",
+    "file": "3be1dff2435154b5e7e961b0e4db9b83a8a2831ede8a6f17c6eba2ac27ede489.cube.gz"
+  },
+  {
+    "id": "e9ef58b01efb9ad279e7c5c9851a22bd898b7d7975df39f33a3ae3c238b9ecd5",
+    "name": "Grey Matter",
+    "category": "MISC",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/MISC/Striped%20Purple%20-%20Grey%20Matter.cube",
+    "file": "e9ef58b01efb9ad279e7c5c9851a22bd898b7d7975df39f33a3ae3c238b9ecd5.cube.gz"
+  },
+  {
+    "id": "6ac78570adbf9729f652e9adf750f87bfb0826a39b3720b4539275fb13a7fd86",
+    "name": "December Greens",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20December%20Greens.cube",
+    "file": "6ac78570adbf9729f652e9adf750f87bfb0826a39b3720b4539275fb13a7fd86.cube.gz"
+  },
+  {
+    "id": "b76d97e0958d9b2b80b6f3c51da6c634a46cb0b5741b854a014beb405510194e",
+    "name": "Emerald Malaise",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Emerald%20Malaise.cube",
+    "file": "b76d97e0958d9b2b80b6f3c51da6c634a46cb0b5741b854a014beb405510194e.cube.gz"
+  },
+  {
+    "id": "239bfe571286f69c508d291af7ea7c0f6bd67db4cf34a96cb5f419d492641e99",
+    "name": "Irish Uprising",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Irish%20Uprising.cube",
+    "file": "239bfe571286f69c508d291af7ea7c0f6bd67db4cf34a96cb5f419d492641e99.cube.gz"
+  },
+  {
+    "id": "e10ea3a451fdd2fb1716c13d931f98d61f5e8308c1267cdb948763ee136fc0ac",
+    "name": "Philly Fog",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Philly%20Fog.cube",
+    "file": "e10ea3a451fdd2fb1716c13d931f98d61f5e8308c1267cdb948763ee136fc0ac.cube.gz"
+  },
+  {
+    "id": "898e2016268c15270fa1b138b780ad3f0d52460f4b63aa04c92d43a975a8a49d",
+    "name": "Sea Turtle",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Sea%20Turtle.cube",
+    "file": "898e2016268c15270fa1b138b780ad3f0d52460f4b63aa04c92d43a975a8a49d.cube.gz"
+  },
+  {
+    "id": "5d32de40791e499e19348f2636f6757b59f95b1e7c9572b2a3feb2516d0fb4b4",
+    "name": "Seagull Cove",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Seagull%20Cove.cube",
+    "file": "5d32de40791e499e19348f2636f6757b59f95b1e7c9572b2a3feb2516d0fb4b4.cube.gz"
+  },
+  {
+    "id": "90173cffdcd37f21603f0514f601e0be0940865d972a27e8b4b2ec2797fb1b7b",
+    "name": "Snowy Blues",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Snowy%20Blues.cube",
+    "file": "90173cffdcd37f21603f0514f601e0be0940865d972a27e8b4b2ec2797fb1b7b.cube.gz"
+  },
+  {
+    "id": "6ce8b929d140ae1bc0bf58910d996a65ba37f405cd1f95c592580c53617ed940",
+    "name": "Spring Water",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Spring%20Water.cube",
+    "file": "6ce8b929d140ae1bc0bf58910d996a65ba37f405cd1f95c592580c53617ed940.cube.gz"
+  },
+  {
+    "id": "7b6550908105d1e3806338d5ed7f731d0036cf6353815769aeae70a191781aa3",
+    "name": "Teal Embers",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Teal%20Embers.cube",
+    "file": "7b6550908105d1e3806338d5ed7f731d0036cf6353815769aeae70a191781aa3.cube.gz"
+  },
+  {
+    "id": "378623fd8b62bb0f71941532e270c121120203e5e78fbca628732b01758abc7a",
+    "name": "Teal Supreme",
+    "category": "Scenic Moods",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Scenic%20Moods/Striped%20Purple%20-%20Teal%20Supreme.cube",
+    "file": "378623fd8b62bb0f71941532e270c121120203e5e78fbca628732b01758abc7a.cube.gz"
+  },
+  {
+    "id": "3b8094eb7879d3c26f0a9fb6374be5f01885ebd7c4a33aba427706b95080b5fd",
+    "name": "Ara",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Ara.cube",
+    "file": "3b8094eb7879d3c26f0a9fb6374be5f01885ebd7c4a33aba427706b95080b5fd.cube.gz"
+  },
+  {
+    "id": "d1df06e04451d97576e033448cc3aca28153fa47b46463f24dce5adc9ecef8f6",
+    "name": "Boa",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Boa.cube",
+    "file": "d1df06e04451d97576e033448cc3aca28153fa47b46463f24dce5adc9ecef8f6.cube.gz"
+  },
+  {
+    "id": "cc7b524fb573cba2798d15ea841bed577c80c9fbb975cf2b43b037f538c960d9",
+    "name": "Dodo",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Dodo.cube",
+    "file": "cc7b524fb573cba2798d15ea841bed577c80c9fbb975cf2b43b037f538c960d9.cube.gz"
+  },
+  {
+    "id": "8e0290a7c6cf0d9624ea45131f1994e85079843f97ad022174123c76b5bd125f",
+    "name": "Great Auk",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Great%20Auk.cube",
+    "file": "8e0290a7c6cf0d9624ea45131f1994e85079843f97ad022174123c76b5bd125f.cube.gz"
+  },
+  {
+    "id": "79995f45fbd4fdad85f978e442c1df74f3d15d8d81eea2dca6eed2294e254448",
+    "name": "Kraken",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Kraken.cube",
+    "file": "79995f45fbd4fdad85f978e442c1df74f3d15d8d81eea2dca6eed2294e254448.cube.gz"
+  },
+  {
+    "id": "8539c65059c9b96f90e089680ad0c26b3f7a75550a025a10967934b74da5d1eb",
+    "name": "Lobster",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Lobster.cube",
+    "file": "8539c65059c9b96f90e089680ad0c26b3f7a75550a025a10967934b74da5d1eb.cube.gz"
+  },
+  {
+    "id": "0cc9d9ae9130fe02bcbb894da6432d83c38da5f533cf857adb60b65c201b2578",
+    "name": "Moa",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Moa.cube",
+    "file": "0cc9d9ae9130fe02bcbb894da6432d83c38da5f533cf857adb60b65c201b2578.cube.gz"
+  },
+  {
+    "id": "8269e1e28977fc273d7c74ee9b17a1a975e5e1481d9c3499921974f36a0b6189",
+    "name": "Tiger",
+    "category": "Zoology",
+    "author": "Austin Barrett / Striped Purple",
+    "license": "MIT",
+    "space": "srgb",
+    "url": "https://github.com/stripedpurple/color-grading-luts/blob/9757e8b5147693cab49c3fd674bf23dbe28d6c8e/Zoology/Striped%20Purple%20-%20Tiger.cube",
+    "file": "8269e1e28977fc273d7c74ee9b17a1a975e5e1481d9c3499921974f36a0b6189.cube.gz"
+  },
+  {
+    "id": "e51d94637d2768858c3152975a6eb89a2a67224e313340a7a477f7c0f0bb0c9a",
+    "name": "Classic Film",
+    "category": "Film Stock",
+    "author": "Alex Jordan",
+    "license": "CC0-1.0",
+    "space": "rec709",
+    "url": "https://freshluts.com/luts/31",
+    "file": "e51d94637d2768858c3152975a6eb89a2a67224e313340a7a477f7c0f0bb0c9a.cube.gz",
+    "mirror": "https://github.com/OpenShot/openshot-qt/blob/b220618e3fbd7993e49232a3cc9aaa489b58a083/src/colors/film_stock_%26_vintage/classic_film.cube"
+  }
+]

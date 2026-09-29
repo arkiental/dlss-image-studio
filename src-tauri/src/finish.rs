@@ -67,6 +67,16 @@ pub struct Mask {
 #[derive(Clone, Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Finish {
+    #[serde(default)]
+    pub lut_id: String,
+    #[serde(default)]
+    pub lut_enabled: bool,
+    #[serde(default = "lut_strength_default")]
+    pub lut_strength: f32,
+    #[serde(default = "lut_space_default")]
+    pub lut_space: String,
+    #[serde(default = "lut_outside_default")]
+    pub lut_outside: String,
     pub exposure: f32,
     pub highlights: f32,
     pub shadows: f32,
@@ -109,6 +119,15 @@ pub struct Finish {
     pub pass_low: f32,
     pub pass_high: f32,
     pub pass_invert: bool,
+}
+fn lut_strength_default() -> f32 {
+    100.
+}
+fn lut_space_default() -> String {
+    "srgb".into()
+}
+fn lut_outside_default() -> String {
+    "preserve".into()
 }
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -536,6 +555,14 @@ impl Finish {
         {
             return Err("Invalid finishing settings".into());
         }
+        if !["srgb", "rec709", "linear"].contains(&self.lut_space.as_str())
+            || !["preserve", "clamp"].contains(&self.lut_outside.as_str())
+            || !(0. ..=100.).contains(&self.lut_strength)
+            || (!self.lut_id.is_empty()
+                && (self.lut_id.len() != 64 || !self.lut_id.bytes().all(|b| b.is_ascii_hexdigit())))
+        {
+            return Err("Invalid LUT settings".into());
+        }
         for c in &self.curves {
             if c.len() < 2
                 || c.len() > 32
@@ -947,6 +974,11 @@ pub fn apply(
     if a.masked && !a.masks.iter().any(|m| m.enabled) {
         return Err("Mask scope requires an enabled mask".into());
     }
+    let lut = if a.lut_enabled && a.lut_strength > 0. && !a.lut_id.is_empty() {
+        Some(crate::lut::get(&a.lut_id)?)
+    } else {
+        None
+    };
     let identity_curves = a
         .curves
         .iter()
@@ -1047,6 +1079,9 @@ pub fn apply(
             for (k, v) in p[..3].iter_mut().enumerate() {
                 *v = lin(curve(&a.curves[k + 1], curve(&a.curves[0], enc(*v))));
             }
+        }
+        if let Some(lut) = &lut {
+            lut.apply(p, a.lut_strength, &a.lut_space, &a.lut_outside);
         }
     });
     if a.bloom > 0. {
@@ -1486,6 +1521,52 @@ mod tests {
         }
     }
     #[test]
+    fn lut_preview_export_precision_and_missing_asset() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/lut-conformance.json"))
+                .unwrap();
+        let id = crate::lut::register(fixture["cube"].as_str().unwrap()).unwrap();
+        let f = Frame {
+            w: 2,
+            h: 1,
+            px: vec![0.2, 0.4, 0.6, 0.5, 4., 0.2, 0.1, 1.],
+        };
+        let mut s = state();
+        let a = s.finish.as_mut().unwrap();
+        a.lut_id = id;
+        a.lut_enabled = true;
+        a.lut_space = "linear".into();
+        let processed = apply(f.clone(), &f, &s, &BTreeMap::new()).unwrap();
+        for (v, e) in processed.px[..4].iter().zip([0.34, 0.47, 0.3, 0.5]) {
+            assert!((v - e).abs() < 1e-6);
+        }
+        assert!((processed.px[4] - 4.).abs() < 1e-6);
+        let root = std::env::temp_dir().join(format!("studio-lut-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        for (format, bits, space, tolerance) in [
+            ("png", 16, "srgb", 0.00005),
+            ("exr", 32, "linear", 0.000002),
+        ] {
+            let path = root.join(format!("graded.{format}"));
+            let _ = std::fs::remove_file(&path);
+            write(&path, &processed, &output(format, bits)).unwrap();
+            let (decoded, _, _) = read(&path, space).unwrap();
+            assert_eq!((decoded.w, decoded.h), (2, 1));
+            for (v, e) in decoded.px[..4].iter().zip(&processed.px[..4]) {
+                assert!((v - e).abs() < tolerance, "{format}: {v} != {e}");
+            }
+            if format == "exr" {
+                assert!((decoded.px[4] - 4.).abs() < 1e-6);
+            }
+            std::fs::remove_file(path).unwrap();
+        }
+        std::fs::remove_dir(root).unwrap();
+        s.finish.as_mut().unwrap().lut_id = "f".repeat(64);
+        assert!(apply(f.clone(), &f, &s, &BTreeMap::new()).is_err());
+        s.finish.as_mut().unwrap().lut_enabled = false;
+        assert!(apply(f.clone(), &f, &s, &BTreeMap::new()).is_ok());
+    }
+    #[test]
     fn curves_do_not_clip_hdr_and_are_smooth() {
         let c = vec![
             Point { x: 0., y: 0. },
@@ -1757,6 +1838,60 @@ mod tests {
         assert_eq!(info.passes.len(), 2);
         assert!(passes.keys().any(|s| s.contains("Depth")));
         std::fs::remove_file(path).unwrap();
+    }
+    #[test]
+    #[ignore = "Requires RTX GPU, external neural runtime and STUDIO_TEST_LUT pointing to a bundled CUBE"]
+    fn lut_after_neural_rtx() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let text =
+            std::fs::read_to_string(std::env::var("STUDIO_TEST_LUT").expect("Set STUDIO_TEST_LUT"))
+                .unwrap();
+        let id = crate::lut::register(&text).unwrap();
+        assert!(include_str!("../../public/luts/manifest.json").contains(&id));
+        let (f, info, passes) = read(&root.join("public/sample-car.png"), "auto").unwrap();
+        let mut b = crate::BACKEND.lock().unwrap();
+        b.source = f.display();
+        b.width = f.w;
+        b.height = f.h;
+        b.source_id = 9877;
+        b.float_source = Some(f);
+        b.info = Some(info);
+        b.passes = passes;
+        b.neural_cache = None;
+        let mut s = state();
+        s.neural.enabled = true;
+        let before = b.render(&s, 0).unwrap();
+        let a = s.finish.as_mut().unwrap();
+        a.lut_id = id;
+        a.lut_enabled = true;
+        a.lut_strength = 65.;
+        let after = b.render(&s, 0).unwrap();
+        assert_ne!(before.display(), after.display());
+        assert!(!b.diagnostics.is_null());
+        let folder = root.join("verification/luts");
+        std::fs::create_dir_all(&folder).unwrap();
+        for (name, frame) in [("neural-before-lut", &before), ("neural-with-lut", &after)] {
+            let path = folder.join(format!("{name}.png"));
+            let _ = std::fs::remove_file(&path);
+            write(&path, frame, &output("png", 16)).unwrap();
+        }
+        let decoded = image::open(folder.join("neural-with-lut.png"))
+            .unwrap()
+            .to_rgba8();
+        assert_eq!((decoded.width(), decoded.height()), (after.w, after.h));
+        let mae = decoded
+            .as_raw()
+            .iter()
+            .zip(after.display())
+            .map(|(a, b)| (*a as f32 - b as f32).abs())
+            .sum::<f32>()
+            / decoded.as_raw().len() as f32;
+        assert!(mae <= 1., "Preview/export mean error {mae}");
+        println!(
+            "LUT + NGX {}x{}, PNG16 preview/export MAE {mae}; diagnostics {}",
+            after.w, after.h, b.diagnostics
+        );
+        b.worker = None;
     }
     #[test]
     #[ignore = "Requires RTX GPU and the separately installed neural runtime"]

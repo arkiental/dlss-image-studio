@@ -1,6 +1,7 @@
 // Synthetic Tauri transport tests exercise request ordering and desktop workflows.
 // Pixel values are test markers, never evidence of neural image quality.
 import { chromium, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 const browser = await chromium.launch({
   executablePath:
     process.env.BROWSER_EXE ||
@@ -44,6 +45,16 @@ await page.addInitScript(() => {
           runtime_ready: true,
           neural_rendering: "Synthetic transport",
         };
+      if (command === "register_lut")
+        return Array.from(
+          new Uint8Array(
+            await crypto.subtle.digest(
+              "SHA-256",
+              new TextEncoder().encode(args.text),
+            ),
+          ),
+          (v) => v.toString(16).padStart(2, "0"),
+        ).join("");
       if (command === "startup_file") return null;
       if (command === "recent_projects") return [];
       if (command === "plugin:dialog|open")
@@ -234,6 +245,21 @@ if (
 )
   await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("0.5");
+await page.getByRole("button", { name: "LUTs", exact: true }).click();
+await page
+  .getByLabel("Import CUBE LUT")
+  .setInputFiles({
+    name: "Project LUT.cube",
+    mimeType: "text/plain",
+    buffer: Buffer.from(
+      JSON.parse(readFileSync("tests/fixtures/lut-conformance.json", "utf8"))
+        .cube,
+    ),
+  });
+await expect(
+  page.getByLabel("LUT preset").locator("option:checked"),
+).toHaveText("Project LUT");
+
 await ready();
 await page.waitForTimeout(250);
 await page
@@ -245,7 +271,9 @@ const saved = await page.evaluate(() => window.saved);
 if (
   saved.sourcePath !== "D:/renders/reloaded.png" ||
   saved.state.finish.exposure !== 0.5 ||
-  saved.snapshots.length !== 1
+  saved.snapshots.length !== 1 ||
+  saved.luts.length !== 1 ||
+  saved.state.finish.lutId !== saved.luts[0].id
 )
   throw Error("Project save dropped session data");
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1.5");
@@ -270,6 +298,11 @@ if (
 await expect(
   page.getByRole("slider", { name: "Exposure", exact: true }),
 ).toHaveValue("0.5");
+await expect(
+  page.getByLabel("LUT preset").locator("option:checked"),
+).toHaveText("Project LUT");
+const restoredRequest = await page.evaluate(() => window.requests.at(-1));
+expect(restoredRequest.state.finish.lutId).toBe(saved.luts[0].id);
 // Batch continues and retains queue after leaving its workspace.
 await page.getByRole("button", { name: "Batch", exact: true }).click();
 await page.evaluate(() => window.dialogPaths.push(["D:/a.png", "D:/b.png"]));

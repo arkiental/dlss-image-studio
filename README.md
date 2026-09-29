@@ -10,6 +10,7 @@ A focused Windows render-finishing application: open a render, enhance, refine, 
 - Wheel zoom, numerical zoom, Fit/Fill, pan, vertical/horizontal before-after splits, temporary original view, a floating 1–10× inspector, pixel grid, presentation mode and fullscreen.
 - Existing **real neural rendering** and neural styles, intensity, tone, structure and evaluation resolution. Conventional processing stays separate.
 - Scene-linear float finishing: exposure and tonal ranges, RGB/channel curves, white balance, three-way grading, denoise, sharpening, clarity, texture and broad local contrast.
+- [LUT grading](docs/LUTS.md): 50 bundled MIT/CC0 creative looks, custom CUBE import, strength/bypass, HDR range handling, and portable project/preset assets. Open **Refine → LUTs**.
 - Non-destructive shape, polygon, brush/eraser, gradient, color, luminance and data-pass masks; combine/subtract/intersect, feather, opacity, expand/contract, blur and editable dodge/burn.
 - Flat multilayer EXR and individual data-pass import, pass inspection/remapping, depth-range selection, focus picking, depth-weighted blur and fog.
 - Half/float EXR and 16-bit PNG/TIFF output. Tagged sRGB, Display P3, Rec.709 and linear exports; ACEScg EXR. Original dimensions remain the default.
