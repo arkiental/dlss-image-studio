@@ -1,0 +1,2 @@
+import {chromium} from '@playwright/test';import fs from 'node:fs';
+const b=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});const p=await b.newPage();await p.goto('http://127.0.0.1:1420');const fixture=await p.evaluate(async()=>{const{defaults}=await import('/src/state.ts');const s=defaults();s.neural.enabled=false;return s});fs.mkdirSync('tests/fixtures',{recursive:true});fs.writeFileSync('tests/fixtures/finish-defaults.json',JSON.stringify(fixture,null,2));await b.close();

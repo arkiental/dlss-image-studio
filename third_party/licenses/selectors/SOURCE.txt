@@ -1,0 +1,4 @@
+selectors 0.38.0 (MPL-2.0)
+https://crates.io/crates/selectors/0.38.0
+https://github.com/servo/stylo
+https://www.mozilla.org/media/MPL/2.0/index.txt

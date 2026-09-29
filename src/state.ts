@@ -1,3 +1,4 @@
+import { finishDefaults, type Finish } from "./finish";
 export type Style = "cinematic" | "neutral" | "natural";
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Adjustments = {
@@ -9,6 +10,7 @@ export type Adjustments = {
   hue: number;
 };
 export interface StudioState extends Adjustments {
+  finish: Finish;
   style: Style;
   neural: { enabled: boolean; style: "Default" | "Natural" | "Cinematic" };
   processingResolution: number;
@@ -26,6 +28,7 @@ export interface StudioState extends Adjustments {
   };
 }
 export const defaults = (): StudioState => ({
+  finish: finishDefaults(),
   style: "neutral",
   neural: { enabled: true, style: "Default" },
   processingResolution: 100,

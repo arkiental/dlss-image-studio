@@ -30,8 +30,8 @@ npm run tauri build
 Outputs:
 
 - `src-tauri/target/release/dlss-image-studio.exe`
-- `src-tauri/target/release/bundle/nsis/DLSS Image Studio_0.1.0_x64-setup.exe`
-- `src-tauri/target/release/bundle/msi/DLSS Image Studio_0.1.0_x64_en-US.msi`
+- `src-tauri/target/release/bundle/nsis/DLSS Image Studio_0.2.0_x64-setup.exe`
+- `src-tauri/target/release/bundle/msi/DLSS Image Studio_0.2.0_x64_en-US.msi`
 
 The Windows GitHub Actions workflow runs the same commands and uploads all three artifacts. It does not run GPU tests on hosted runners without a suitable physical GPU. Download and run the native smoke test on the target machine.
 
@@ -64,3 +64,17 @@ cargo test --manifest-path src-tauri/Cargo.toml --release real_neural_pipeline -
 ```
 
 This ignored-by-default test requires an actual compatible GPU. It validates NGX results, parameter effects, cache/export equality, mask behavior, reloads, odd dimensions and alpha. A provider or evaluation failure fails the test.
+
+## Professional workspace checks
+
+With Vite running at port 1420:
+
+```powershell
+node scripts/preview-race-check.mjs
+node scripts/studio-check.mjs
+cargo test --manifest-path src-tauri/Cargo.toml --release professional_pipeline_rtx -- --ignored --nocapture
+```
+
+The first script uses a synthetic transport for UI races and session workflows. The second uses real conventional browser processing for layout/mask checks. Only the final ignored test invokes the real provider on compatible local hardware. The normal Rust suite checks HDR precision, EXR multilayer/half/float decoding, tagged color round trips, masks and recoverable project writes.
+
+`python scripts/third-party-notices.py` regenerates notices from the locked Cargo/npm packages and pinned license supplements. Installers include THIRD_PARTY_NOTICES.txt. The proprietary neural provider is always a separate installation.

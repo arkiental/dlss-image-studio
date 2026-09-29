@@ -1,41 +1,52 @@
 # DLSS Image Studio
 
-A Windows image editor built with Tauri 2, React, TypeScript, Rust and D3D12. Neural rendering uses a separately installed **Visual Enhancer v13.2** runtime. Conventional color adjustments remain separate.
+A focused Windows render-finishing application: open a render, enhance, refine, compare, and export. Built with Tauri 2, React, TypeScript, Rust, and a D3D12 neural-provider bridge.
 
-![Studio](docs/screenshots/studio-1536.png)
+![Render-finishing workspace](docs/screenshots/studio-professional.png)
 
-## Setup
+## Version 0.2
 
-Download and extract the complete [official Visual Enhancer v13.2 package](https://github.com/Merserk/dlss5-visual-enhancer/releases/tag/v13.2), review its licenses, then select its folder in Studio Settings. No proprietary runtime is bundled. See [integration details](DLSS_INTEGRATION.md).
+- A large viewport, navigation rail, contextual tabs, two expanded adjustment groups at a time, and a presets/snapshots/history shelf.
+- Wheel zoom, numerical zoom, Fit/Fill, pan, vertical/horizontal before-after splits, temporary original view, a floating 1–10× inspector, pixel grid, presentation mode and fullscreen.
+- Existing **real neural rendering** and neural styles, intensity, tone, structure and evaluation resolution. Conventional processing stays separate.
+- Scene-linear float finishing: exposure and tonal ranges, RGB/channel curves, white balance, three-way grading, denoise, sharpening, clarity, texture and broad local contrast.
+- Non-destructive shape, polygon, brush/eraser, gradient, color, luminance and data-pass masks; combine/subtract/intersect, feather, opacity, expand/contract, blur and editable dodge/burn.
+- Flat multilayer EXR and individual data-pass import, pass inspection/remapping, depth-range selection, focus picking, depth-weighted blur and fog.
+- Half/float EXR and 16-bit PNG/TIFF output. Tagged sRGB, Display P3, Rec.709 and linear exports; ACEScg EXR. Original dimensions remain the default.
+- Project save/reopen, recoverable project backups, undo/redo, snapshots, preset libraries and a persistent-in-session batch queue.
 
-Intensity, Tone and Structure now call the provider, each with range 0–2 and default 1. The right-hand Style buttons select the neural style. Color presets are available in Settings. The former brightness/detail substitutes have been removed. Studio requires successful NGX creation and evaluation diagnostics; failures never silently become ordinary filters.
+This release implements the core finishing workspace, **not every item in the full professional-tools specification**. See the [implementation and limits matrix](docs/PROFESSIONAL_WORKSPACE.md).
 
-## Features
+## Neural runtime
 
-- Full-image neural rendering by default; explicit optional feathered region mask.
-- Zoom inspects the same processed pixels as the main image and exports.
-- Separate contrast, gamma, vibrance, brightness, saturation and hue, plus three color presets.
-- Ctrl+O, image paste and drag-and-drop.
-- Main image zoom from 1ז10� by wheel or slider; drag to pan, Fit to reset.
-- Toggle the floating inspector with the checkbox; adjust detail from 1ז10� and drag its header anywhere inside the app. Z restores it.
-- Sliders support continuous mouse/touch dragging and keyboard adjustments.
-- Original-dimension PNG/JPEG/TIFF export, Windows clipboard, and three-neural-style batch export.
-- Local processing, cached neural results, runtime diagnostics and obsolete-preview rejection.
+Install the complete [Visual Enhancer v13.2 package](https://github.com/Merserk/dlss5-visual-enhancer/releases/tag/v13.2) separately, review its terms, and choose its folder in Studio Settings. No Neuroframe or NVIDIA runtime DLLs are bundled. See [integration details](DLSS_INTEGRATION.md).
+
+Neural controls use the provider's supported 0–2 ranges, default 1. DLSS Detail 0–100 maps to intensity 0–2. Resolution controls evaluation size without forcing an output resize. Failed neural evaluation blocks export of the failed state; the app never substitutes an ordinary filter.
+
+The verified provider accepts 8-bit display-referred images. Neural rendering is disabled for HDR/high-bit-depth sources, while conventional finishing retains their float precision. The app refuses a neural request on such a source rather than silently converting it to 8-bit.
+
+## Quick use
+
+1. Open or drop a render. EXR, PNG, TIFF, JPEG and WebP are supported.
+2. Choose a style, refine Enhance/Tone/Color/Local, and compare with **B** or a split view.
+3. Capture named snapshots. Use Masks or Passes for targeted finishing.
+4. Export at original dimensions; use EXR to preserve HDR or 16-bit PNG/TIFF for an integer deliverable.
+
+**Ctrl+O** open · **Ctrl+S** project · **Ctrl+Shift+S** Save As · **Ctrl+E** export · **Ctrl+Z / Ctrl+Shift+Z** undo/redo · **F** fit · **1** 100% · **B** before/after · hold **\** original · **Space+drag / middle drag** pan · **Tab** presentation · **F11** fullscreen · **M** masks · **Z** inspector.
+
+Sliders and numeric values support dragging, typing, keyboard arrows, Shift for fine movement, Ctrl/Cmd for finer movement, and double-click/right-click reset.
 
 ## Build and verification
 
-See [BUILDING.md](BUILDING.md). Run `npm ci`, `npm test`, and `npm run tauri build`. Browser development (`npm run dev`) is explicitly color-only. Hosted build success does not prove neural rendering.
-
-See the [RTX 4090 verification report](docs/NEURAL_VERIFICATION.md). To exercise the provider locally after configuring it:
+See [BUILDING.md](BUILDING.md), the [professional-workspace verification](docs/PROFESSIONAL_VERIFICATION.md), and [earlier neural-runtime evidence](docs/NEURAL_VERIFICATION.md).
 
 ```powershell
-cargo test --manifest-path src-tauri/Cargo.toml --release real_neural_pipeline -- --ignored --nocapture
+npm ci
+npm test
+cargo test --manifest-path src-tauri/Cargo.toml
+npm run tauri build
 ```
 
-## Limits
+Browser development uses a separate worker for conventional finishing and UI checks. It cannot run the neural provider or native HDR/pass/project workflows. GitHub build success does not establish neural evaluation; that requires the separately installed runtime and physical compatible hardware.
 
-Images are 8-bit sRGB. Original alpha and dimensions are retained; odd/small images are padded for evaluation then cropped back. JPEG drops alpha. HDR, metadata round-trip and ICC embedding are not implemented. Limits are 64 megapixels and 16384 pixels per side; GPU memory may impose lower limits. Neural upscaling, video and advanced provider controls are not exposed.
-
-A persistent provider and binary pixel pipes keep warm adjustments fast (roughly 33–45 ms for the 1560×1008 sample through the native pipeline on RTX 4090). Cold startup or a new processing size takes about two seconds. The restored Resolution slider scales neural evaluation size from 1–100%; outputs retain original dimensions. While processing, completed intermediate frames can be displayed and exports are disabled. Files are not overwritten. Batch failure can leave completed exports. Logs are local at `%LOCALAPPDATA%/DLSS Image Studio/logs/studio.log`.
-
-Independent application; not affiliated with NVIDIA or Merserk. Their trademarks and separately installed software remain subject to their owners' terms.
+Open-source dependency notices ship in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Runtime components remain separately licensed. Independent application; not affiliated with NVIDIA or Merserk.

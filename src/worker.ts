@@ -1,8 +1,12 @@
-import { processPixels } from "./processing";
+import { finishBrowser } from "./finishBrowser";
 self.onmessage = ({ data }) => {
-  const output = processPixels(data.image, data.state);
-  self.postMessage(
-    { id: data.id, key: data.key, sourceUrl: data.sourceUrl, image: output },
-    { transfer: [output.data.buffer] },
-  );
+  try {
+    const output = finishBrowser(data.image, data.state);
+    self.postMessage(
+      { id: data.id, key: data.key, sourceUrl: data.sourceUrl, image: output },
+      { transfer: [output.data.buffer] },
+    );
+  } catch (error) {
+    self.postMessage({ id: data.id, key: data.key, error: String(error) });
+  }
 };

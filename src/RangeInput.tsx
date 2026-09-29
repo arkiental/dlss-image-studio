@@ -1,4 +1,4 @@
-import type { CSSProperties, PointerEvent } from "react";
+import { useRef, type CSSProperties, type PointerEvent } from "react";
 import { clamp } from "./state";
 
 // Explicit capture keeps mouse/touch drags working while async previews update
@@ -22,8 +22,27 @@ export function RangeInput({
   style?: CSSProperties;
   onValue: (value: number) => void;
 }) {
+  const start = useRef({ x: 0, value });
   function update(e: PointerEvent<HTMLInputElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
+    const fine = e.ctrlKey || e.metaKey ? 100 : e.shiftKey ? 10 : 1;
+    if (fine > 1) {
+      onValue(
+        clamp(
+          Number(
+            (
+              start.current.value +
+              (((e.clientX - start.current.x) / Math.max(1, rect.width - 21)) *
+                (max - min)) /
+                fine
+            ).toFixed(6),
+          ),
+          min,
+          max,
+        ),
+      );
+      return;
+    }
     const ratio = clamp(
       (e.clientX - rect.left - 10.5) / Math.max(1, rect.width - 21),
     );
@@ -44,14 +63,39 @@ export function RangeInput({
       value={value}
       min={min}
       max={max}
-      step={step}
+      step="any"
       disabled={disabled}
       style={style}
       onChange={(e) => onValue(+e.target.value)}
+      onKeyDown={(e) => {
+        if (
+          !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+        )
+          return;
+        {
+          e.preventDefault();
+          const direction =
+            e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
+          onValue(
+            clamp(
+              Number(
+                (
+                  value +
+                  (direction * step) /
+                    (e.ctrlKey || e.metaKey ? 100 : e.shiftKey ? 10 : 1)
+                ).toFixed(6),
+              ),
+              min,
+              max,
+            ),
+          );
+        }
+      }}
       onPointerDown={(e) => {
         if (e.button !== 0 || disabled) return;
         e.preventDefault();
         e.stopPropagation();
+        start.current = { x: e.clientX, value };
         e.currentTarget.focus({ preventScroll: true });
         e.currentTarget.setPointerCapture(e.pointerId);
         update(e);

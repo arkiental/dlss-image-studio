@@ -1,0 +1,140 @@
+{
+  "finish": {
+    "exposure": 0,
+    "highlights": 0,
+    "shadows": 0,
+    "whites": 0,
+    "blacks": 0,
+    "temperature": 0,
+    "tint": 0,
+    "denoise": 0,
+    "chromaDenoise": 0,
+    "preserveDetail": 80,
+    "sharpen": 0,
+    "sharpenRadius": 1,
+    "sharpenThreshold": 2,
+    "clarity": 0,
+    "texture": 0,
+    "dehaze": 0,
+    "bloom": 0,
+    "bloomThreshold": 1,
+    "bloomRadius": 12,
+    "vignette": 0,
+    "vignetteMidpoint": 50,
+    "grain": 0,
+    "grade": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    "gradeStrength": 100,
+    "gradeBalance": 0,
+    "lift": 0,
+    "gain": 0,
+    "curves": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    ],
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 1,
+      "height": 1
+    },
+    "rotation": 0,
+    "flipX": false,
+    "flipY": false,
+    "masks": [],
+    "masked": false,
+    "depthPass": "",
+    "focus": 0.5,
+    "dof": 0,
+    "fog": 0,
+    "soloPass": "",
+    "passLow": 0,
+    "passHigh": 1,
+    "passInvert": false
+  },
+  "style": "neutral",
+  "neural": {
+    "enabled": false,
+    "style": "Default"
+  },
+  "processingResolution": 100,
+  "contrast": 0,
+  "gamma": 0,
+  "vibrance": 0,
+  "brightness": 0,
+  "saturation": 0,
+  "hue": 0,
+  "local": {
+    "scope": "image",
+    "intensity": 1,
+    "tone": 1,
+    "structure": 1,
+    "region": {
+      "x": 0.08,
+      "y": 0.51,
+      "width": 0.14,
+      "height": 0.28
+    }
+  },
+  "zoom": {
+    "visible": true,
+    "factor": 2.5,
+    "position": {
+      "x": 48,
+      "y": 150
+    }
+  }
+}

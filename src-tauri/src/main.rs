@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod finish;
 mod neural;
+mod projects;
 use serde::Deserialize;
 use std::{
     borrow::Cow,
@@ -38,6 +40,9 @@ extern "C" {
     fn studio_shutdown();
 }
 struct Backend {
+    float_source: Option<finish::Frame>,
+    info: Option<finish::Info>,
+    passes: std::collections::BTreeMap<String, finish::Frame>,
     width: u32,
     height: u32,
     initialized: bool,
@@ -48,6 +53,22 @@ struct Backend {
     diagnostics: serde_json::Value,
 }
 static BACKEND: Mutex<Backend> = Mutex::new(Backend {
+    float_source: None,
+    info: None,
+    passes: std::collections::BTreeMap::new(),
+    width: 0,
+    height: 0,
+    initialized: false,
+    source: Vec::new(),
+    source_id: 0,
+    neural_cache: None,
+    worker: None,
+    diagnostics: serde_json::Value::Null,
+});
+static BATCH_BACKEND: Mutex<Backend> = Mutex::new(Backend {
+    float_source: None,
+    info: None,
+    passes: std::collections::BTreeMap::new(),
     width: 0,
     height: 0,
     initialized: false,
@@ -96,6 +117,34 @@ impl Backend {
             self.initialized = true;
         }
         Ok(())
+    }
+    fn render(&mut self, s: &StudioState, max: u32) -> Result<finish::Frame, String> {
+        s.params()?;
+        let original = self
+            .float_source
+            .clone()
+            .unwrap_or_else(|| finish::Frame::rgba8(self.width, self.height, &self.source));
+        if original.w == 0 {
+            return Err("Open a render first".into());
+        }
+        let input = if s.neural.enabled {
+            if self.info.as_ref().is_some_and(|i| i.hdr || i.bit_depth > 8) {
+                return Err("Neural runtime accepts 8-bit display-referred images only. Disable neural rendering to preserve this source's HDR/16-bit data, or export an explicit 8-bit sRGB copy first.".into());
+            }
+            let mut neutral = s.clone();
+            neutral.contrast = 0.;
+            neutral.gamma = 0.;
+            neutral.vibrance = 0.;
+            neutral.brightness = 0.;
+            neutral.saturation = 0.;
+            neutral.hue = 0.;
+            neutral.finish = None;
+            finish::Frame::rgba8(self.width, self.height, &self.process(&neutral)?)
+        } else {
+            original.clone()
+        };
+        let preview = input.preview(max);
+        finish::apply(preview, &original, s, &self.passes)
     }
     fn process(&mut self, s: &StudioState) -> Result<Vec<u8>, String> {
         self.init()?;
@@ -168,6 +217,8 @@ struct Local {
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StudioState {
+    #[serde(default)]
+    finish: Option<finish::Finish>,
     style: String,
     neural: neural::Controls,
     processing_resolution: f32,
@@ -334,6 +385,9 @@ async fn load_source(request: tauri::ipc::Request<'_>) -> Result<(), String> {
         }
         b.source_id = source_id;
         b.source = rgba;
+        b.float_source = None;
+        b.info = None;
+        b.passes.clear();
         b.neural_cache = None;
         b.diagnostics = serde_json::Value::Null;
         b.width = width;
@@ -472,10 +526,246 @@ async fn export_presets(
     }
     blocking(move||{if !folder.is_absolute()||!folder.is_dir(){return Err("Choose an existing export folder".into());}let styles=["cinematic","neutral","natural"];let paths:Vec<_>=styles.iter().map(|s|folder.join(filename(&stem,s))).collect();if paths.iter().any(|p|p.exists()){return Err("A preset output already exists. Choose an empty folder or rename the existing files.".into());}let mut b=BACKEND.lock().map_err(|_|"Backend lock failed")?;b.check_source(source_id)?;let mut done=Vec::new();for(style,path)in styles.iter().zip(paths.iter()){state.preset(style);let bytes=b.process(&state)?;write_image(path,bytes,b.width,b.height)?;done.push(path.to_string_lossy().into_owned());}Ok(done)}).await
 }
+
+#[tauri::command]
+async fn open_render(
+    app: tauri::AppHandle,
+    path: PathBuf,
+    source_id: u64,
+    space: String,
+) -> Result<finish::Info, String> {
+    if !path.is_absolute() || !app.asset_protocol_scope().is_allowed(&path) {
+        return Err("Choose the render using Open Render".into());
+    }
+    SOURCE_REQUEST.fetch_max(source_id, Ordering::SeqCst);
+    REQUEST.fetch_add(1, Ordering::SeqCst);
+    blocking(move || {
+        let (frame, info, passes) = finish::read(&path, &space)?;
+        let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        if SOURCE_REQUEST.load(Ordering::SeqCst) != source_id {
+            return Err("Superseded source".into());
+        }
+        b.source = frame.display();
+        b.width = frame.w;
+        b.height = frame.h;
+        b.float_source = Some(frame);
+        b.info = Some(info.clone());
+        b.passes = passes;
+        b.source_id = source_id;
+        b.neural_cache = None;
+        b.diagnostics = serde_json::Value::Null;
+        Ok(info)
+    })
+    .await
+}
+#[tauri::command]
+async fn source_preview(source_id: u64) -> Result<tauri::ipc::Response, String> {
+    blocking(move || {
+        let b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        let f = b
+            .float_source
+            .clone()
+            .unwrap_or_else(|| finish::Frame::rgba8(b.width, b.height, &b.source));
+        Ok(tauri::ipc::Response::new(f.packed()))
+    })
+    .await
+}
+#[tauri::command]
+async fn finish_preview(
+    state: StudioState,
+    source_id: u64,
+    max: u32,
+) -> Result<tauri::ipc::Response, String> {
+    let id = REQUEST.fetch_add(1, Ordering::SeqCst) + 1;
+    blocking(move || {
+        let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        if REQUEST.load(Ordering::SeqCst) != id {
+            return Err("Superseded preview".into());
+        }
+        b.check_source(source_id)?;
+        b.render(&state, if max == 0 { 0 } else { max.clamp(320, 2048) })
+            .map(|f| tauri::ipc::Response::new(f.packed()))
+    })
+    .await
+}
+#[tauri::command]
+async fn export_finished(
+    app: tauri::AppHandle,
+    path: PathBuf,
+    state: StudioState,
+    source_id: u64,
+    output: finish::Output,
+) -> Result<(), String> {
+    if !app.asset_protocol_scope().is_allowed(&path) {
+        return Err("Choose output in the save dialog".into());
+    }
+    blocking(move || {
+        let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        let f = b.render(&state, 0)?;
+        finish::write(&path, &f, &output)
+    })
+    .await
+}
+#[tauri::command]
+async fn copy_finished(state: StudioState, source_id: u64) -> Result<(), String> {
+    blocking(move || {
+        let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        let f = b.render(&state, 0)?;
+        arboard::Clipboard::new()
+            .and_then(|mut c| {
+                c.set_image(arboard::ImageData {
+                    width: f.w as usize,
+                    height: f.h as usize,
+                    bytes: Cow::Owned(f.display()),
+                })
+            })
+            .map_err(|e| e.to_string())
+    })
+    .await
+}
+#[tauri::command]
+async fn import_pass(
+    app: tauri::AppHandle,
+    path: PathBuf,
+    name: String,
+    source_id: u64,
+) -> Result<Vec<String>, String> {
+    if !app.asset_protocol_scope().is_allowed(&path) {
+        return Err("Choose the pass using the file dialog".into());
+    }
+    blocking(move || {
+        let (f, _, _) = finish::read(&path, "linear")?;
+        let mut b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        if (f.w, f.h) != (b.width, b.height) {
+            return Err("Render pass dimensions must match the beauty image".into());
+        }
+        if b.passes.len() >= 64 {
+            return Err("Maximum 64 passes".into());
+        }
+        b.passes.insert(name, f);
+        Ok(b.passes.keys().cloned().collect())
+    })
+    .await
+}
+#[tauri::command]
+async fn auto_adjust(source_id: u64, kind: String) -> Result<serde_json::Value, String> {
+    blocking(move||{let b=BACKEND.lock().map_err(|_|"Backend lock failed")?;b.check_source(source_id)?;let f=b.float_source.clone().unwrap_or_else(||finish::Frame::rgba8(b.width,b.height,&b.source)).preview(256);let mut avg=[0f32;3];let mut logs=0.;let mut n=0.;for p in f.px.chunks(4).filter(|p|p[3]>0.1){for k in 0..3{avg[k]+=p[k].max(0.);}logs+=(0.2126*p[0]+0.7152*p[1]+0.0722*p[2]).max(0.00001).ln();n+=1.;}if n==0.{return Err("No opaque pixels to measure".into())}if kind=="exposure"{Ok(serde_json::json!({"exposure":(0.18/(logs/n).exp()).log2().clamp(-6.,6.)}))}else{let temperature=(avg[2].max(0.001)/avg[0].max(0.001)).log2()*100.;let tint=((avg[0]+avg[2])*0.5/avg[1].max(0.001)).log2()*100.;Ok(serde_json::json!({"temperature":temperature.clamp(-100.,100.),"tint":tint.clamp(-100.,100.)}))}}).await
+}
+#[tauri::command]
+async fn batch_render(
+    app: tauri::AppHandle,
+    path: PathBuf,
+    destination: PathBuf,
+    state: StudioState,
+    output: finish::Output,
+) -> Result<(), String> {
+    if !app.asset_protocol_scope().is_allowed(&path)
+        || !app
+            .asset_protocol_scope()
+            .is_allowed(destination.parent().ok_or("Invalid output")?)
+    {
+        return Err("Select batch inputs and output folder first".into());
+    }
+    blocking(move || {
+        let (f, info, passes) = finish::read(&path, "auto")?;
+        // Keep the neural worker alive between queued images. Serialize access
+        // to the shared C++ D3D12 context with the interactive backend.
+        let _lock = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        let mut b = BATCH_BACKEND
+            .lock()
+            .map_err(|_| "Batch backend lock failed")?;
+        b.source = f.display();
+        b.width = f.w;
+        b.height = f.h;
+        b.float_source = Some(f);
+        b.info = Some(info);
+        b.passes = passes;
+        b.source_id += 1;
+        b.neural_cache = None;
+        b.diagnostics = serde_json::Value::Null;
+        let f = b.render(&state, 0)?;
+        finish::write(&destination, &f, &output)
+    })
+    .await
+}
+#[tauri::command]
+async fn mask_overlay(state: StudioState, source_id: u64) -> Result<tauri::ipc::Response, String> {
+    blocking(move || {
+        let b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        let f = b
+            .float_source
+            .clone()
+            .unwrap_or_else(|| finish::Frame::rgba8(b.width, b.height, &b.source))
+            .preview(800);
+        finish::overlay(&f, &state, &b.passes).map(tauri::ipc::Response::new)
+    })
+    .await
+}
+#[tauri::command]
+async fn sample_source(source_id: u64, x: f32, y: f32, pass: String) -> Result<Vec<f32>, String> {
+    blocking(move || {
+        let b = BACKEND.lock().map_err(|_| "Backend lock failed")?;
+        b.check_source(source_id)?;
+        let f = if pass.is_empty() {
+            b.float_source
+                .clone()
+                .unwrap_or_else(|| finish::Frame::rgba8(b.width, b.height, &b.source))
+        } else {
+            b.passes
+                .get(&pass)
+                .ok_or("Choose a render pass first")?
+                .clone()
+        };
+        let x = (x.clamp(0., 1.) * f.w as f32) as u32;
+        let y = (y.clamp(0., 1.) * f.h as f32) as u32;
+        let i = (y.min(f.h - 1) * f.w + x.min(f.w - 1)) as usize * 4;
+        Ok(f.px[i..i + 4].to_vec())
+    })
+    .await
+}
+#[tauri::command]
+fn startup_file(app: tauri::AppHandle) -> Option<String> {
+    let p = std::env::args().nth(1)?;
+    let path = PathBuf::from(&p);
+    if !path.is_absolute() || !path.is_file() {
+        return None;
+    }
+    let ext = path.extension()?.to_str()?.to_lowercase();
+    if ![
+        "png", "jpg", "jpeg", "tif", "tiff", "webp", "exr", "dlssproj",
+    ]
+    .contains(&ext.as_str())
+    {
+        return None;
+    }
+    app.asset_protocol_scope().allow_file(path).ok()?;
+    Some(p)
+}
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            startup_file,
+            sample_source,
+            mask_overlay,
+            projects::recent_projects,
+            open_render,
+            source_preview,
+            finish_preview,
+            export_finished,
+            copy_finished,
+            import_pass,
+            auto_adjust,
+            batch_render,
+            projects::read_project,
+            projects::write_project,
+            projects::read_presets,
+            projects::write_presets,
             capabilities,
             configure_neural_runtime,
             load_source,
