@@ -222,6 +222,7 @@ pub fn read(path: &Path, space: &str) -> Result<(Frame, Info, BTreeMap<String, F
         .is_some_and(|s| s.to_string_lossy().eq_ignore_ascii_case("exr"));
     let mut passes = BTreeMap::new();
     let mut has_icc = false;
+    let mut icc_linear = false;
     let mut exr_space = "linear";
     let (mut frame, bits) = if exr {
         use exr::prelude::*;
@@ -370,22 +371,15 @@ pub fn read(path: &Path, space: &str) -> Result<(Frame, Info, BTreeMap<String, F
                     "Only RGB ICC inputs are supported; convert this render to RGB first.".into(),
                 );
             }
-            let tr = profile
-                .create_transform_f32(
-                    moxcms::Layout::Rgba,
-                    &moxcms::ColorProfile::new_srgb(),
-                    moxcms::Layout::Rgba,
-                    Default::default(),
-                )
-                .map_err(|e| e.to_string())?;
-            let mut dst = vec![0.; px.len()];
-            tr.transform(&px, &mut dst).map_err(|e| e.to_string())?;
-            px = dst;
+            px = icc_to_linear(&profile, &px)?;
+            icc_linear = true;
         }
         (Frame { w, h, px }, bits)
     };
     let input = if space == "auto" {
-        if exr {
+        if icc_linear {
+            "linear"
+        } else if exr {
             exr_space
         } else if bits > 16 {
             "linear"
@@ -445,6 +439,79 @@ pub fn read(path: &Path, space: &str) -> Result<(Frame, Info, BTreeMap<String, F
         icc: has_icc,
     };
     Ok((frame, info, passes))
+}
+fn linear_profile() -> moxcms::ColorProfile {
+    let mut p = moxcms::ColorProfile::new_srgb();
+    p.red_trc = Some(moxcms::ToneReprCurve::Lut(vec![]));
+    p.green_trc = p.red_trc.clone();
+    p.blue_trc = p.red_trc.clone();
+    p.cicp = None;
+    p
+}
+
+fn icc_to_linear(profile: &moxcms::ColorProfile, px: &[f32]) -> Result<Vec<f32>, String> {
+    let target = linear_profile();
+    let extended_input = px
+        .chunks_exact(4)
+        .any(|p| p[..3].iter().any(|v| *v < 0. || *v > 1.));
+    let mut dst = vec![0.; px.len()];
+    if extended_input {
+        // LUT profiles have no defined extrapolation beyond their encoded domain.
+        // Evaluate analytic matrix/TRC profiles directly to preserve HDR values.
+        if !profile.is_matrix_shaper()
+            || profile.lut_a_to_b_perceptual.is_some()
+            || profile.lut_a_to_b_colorimetric.is_some()
+            || profile.lut_a_to_b_saturation.is_some()
+        {
+            return Err("This HDR image uses a bounded ICC LUT. Select an explicit input color space to preserve its extended range.".into());
+        }
+        let curves = [&profile.red_trc, &profile.green_trc, &profile.blue_trc]
+            .into_iter()
+            .map(|c| match c {
+                Some(moxcms::ToneReprCurve::Lut(v)) if v.len() > 1 => Err("HDR ICC lookup curves cannot be safely extrapolated. Select an explicit input color space.".into()),
+                Some(c) => c.make_linear_evaluator().map_err(|e| e.to_string()),
+                None => Err("ICC profile is missing its RGB transfer curves".into()),
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        let matrix = profile.transform_matrix(&target).v;
+        dst.par_chunks_mut(4)
+            .zip(px.par_chunks(4))
+            .for_each(|(d, p)| {
+                let linear = [
+                    curves[0].evaluate_value(p[0]),
+                    curves[1].evaluate_value(p[1]),
+                    curves[2].evaluate_value(p[2]),
+                ];
+                for c in 0..3 {
+                    d[c] = (0..3).map(|k| matrix[c][k] as f32 * linear[k]).sum();
+                }
+                d[3] = p[3];
+            });
+    } else {
+        let tr = profile
+            .create_transform_f32(
+                moxcms::Layout::Rgba,
+                &target,
+                moxcms::Layout::Rgba,
+                moxcms::TransformOptions {
+                    allow_extended_range_rgb_xyz: true,
+                    prefer_fixed_point: false,
+                    ..Default::default()
+                },
+            )
+            .map_err(|e| e.to_string())?;
+        tr.transform(px, &mut dst).map_err(|e| e.to_string())?;
+    }
+    if dst
+        .chunks_exact(4)
+        .any(|p| p[..3].iter().any(|v| !v.is_finite()))
+    {
+        return Err(
+            "ICC transform produced non-finite colors. Select an explicit input color space."
+                .into(),
+        );
+    }
+    Ok(dst)
 }
 impl Finish {
     pub fn validate(&self) -> Result<(), String> {
@@ -1518,6 +1585,67 @@ mod tests {
         std::fs::remove_file(path).unwrap();
         std::fs::remove_dir(root).unwrap();
     }
+    #[test]
+    fn icc_preserves_p3_colors_outside_srgb_gamut() {
+        let path =
+            std::env::temp_dir().join(format!("studio-p3-saturated-{}.png", std::process::id()));
+        let f = Frame {
+            w: 1,
+            h: 1,
+            px: vec![1.224745, -0.042058, -0.019642, 0.5],
+        };
+        let mut o = output("png", 16);
+        o.space = "p3".into();
+        let _ = std::fs::remove_file(&path);
+        write(&path, &f, &o).unwrap();
+        let (back, info, _) = read(&path, "auto").unwrap();
+        assert!(info.icc && info.hdr);
+        for (a, b) in f.px.iter().zip(back.px.iter()) {
+            assert!(
+                (a - b).abs() < 0.001,
+                "P3 must retain out-of-sRGB colors: {a} != {b}"
+            );
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn float_tiff_icc_preserves_hdr_and_linear_values() {
+        let path =
+            std::env::temp_dir().join(format!("studio-float-icc-{}.tiff", std::process::id()));
+        let pixels = [-0.125f32, 0.25, 3.75, 0.375, 0.15, 0.25, 0.35, 0.875];
+        {
+            let mut encoder =
+                tiff::encoder::TiffEncoder::new(std::fs::File::create(&path).unwrap()).unwrap();
+            let mut im = encoder
+                .new_image::<tiff::encoder::colortype::RGBA32Float>(2, 1)
+                .unwrap();
+            im.encoder()
+                .write_tag(
+                    tiff::tags::Tag::IccProfile,
+                    output_profile("linear").unwrap().as_slice(),
+                )
+                .unwrap();
+            im.write_data(&pixels).unwrap();
+        }
+        let (f, info, _) = read(&path, "auto").unwrap();
+        assert!(info.icc && info.hdr);
+        assert_eq!(info.bit_depth, 32);
+        for (a, b) in pixels.iter().zip(f.px.iter()) {
+            assert!(
+                (a - b).abs() < 0.001,
+                "Float ICC values must remain scene-linear: {a} != {b}"
+            );
+        }
+        // Bounded LUT curves cannot define a safe HDR extrapolation.
+        let mut bounded = linear_profile();
+        bounded.red_trc = Some(moxcms::ToneReprCurve::Lut(vec![0, 32767, 65535]));
+        assert!(icc_to_linear(&bounded, &pixels)
+            .unwrap_err()
+            .contains("extrapolated"));
+        std::fs::remove_file(path).unwrap();
+    }
+
     #[test]
     fn mask_strokes_eraser_morphology_and_overlay_match() {
         let f = Frame {

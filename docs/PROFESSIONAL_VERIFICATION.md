@@ -9,13 +9,13 @@ Verified on 29 September 2026 on Windows with an NVIDIA GeForce RTX 4090, driver
 | Check | Result | What it establishes |
 | --- | --- | --- |
 | Frontend unit suite | 25 passed | Neutral identity, immutable sources, masks, crop/rotation, curves, partial presets, project state, and existing adjustment behavior |
-| Standard native suite | 20 passed | Float/HDR identity, alpha, half/float multilayer EXR, 16-bit precision, tagged output color round trips, mask rasterization, project validation/backups, unsupported inputs and output overwrite refusal |
+| Standard native suite | 22 passed | Float/HDR identity, alpha, half/float multilayer EXR, 16-bit precision, tagged output color round trips, extended-gamut P3 and float-TIFF ICC preservation, mask rasterization, project validation/backups, unsupported inputs and output overwrite refusal |
 | Local ignored GPU suite | 2 passed | Actual provider evaluation on the RTX 4090, neural parameter/style effects, cached export agreement, source reloads, region composition and original dimensions |
 | Preview transport script | Passed | Latest-result ordering, failure/recovery, matching inspector, held sliders, fine keyboard adjustment, undo/redo, split/pan/zoom, reduced drag preview and full-size refinement, project flow, batch persistence and export readiness |
 | Workspace browser script | Passed | Real conventional browser processing, masks, comparison, snapshots, format defaults; no JavaScript errors or horizontal overflow at 1536×1024 and 1080×840 |
 | TypeScript / Vite / Tauri release build | Passed | Production compilation and packaging inputs |
 
-The transport script deliberately uses a synthetic native transport. Its success is not evidence of neural execution. The browser worker is also separate from the native float pipeline. The two physical-GPU tests provide the neural evidence.
+The transport script deliberately uses a synthetic native transport. Its success is not evidence of neural execution. The browser worker is also separate from the native float pipeline. The two physical-GPU tests provide the neural evidence. ICC regression tests include saturated P3 red outside the sRGB gamut, negative/over-range float TIFF values, and rejection of bounded ICC LUTs whose HDR extrapolation is undefined.
 
 ## Actual neural evaluation
 
@@ -49,9 +49,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --release -- --ignored --nocaptu
 
 ## Installed desktop checks
 
-The release executable was copied to `D:\software\dlss-image-studio\app\dlss-image-studio.exe`. Its SHA-256 matches the locally built executable:
-
-`C006854517E8870A65DFAB3276020F7CEB70F1925E0F52E95C980AF82519D8A8`
+The release executable was copied to `D:\software\dlss-image-studio\app\dlss-image-studio.exe`, with a SHA-256 comparison against the locally built executable.
 
 The previous executable is retained at `verification/pre-professional-workspace.exe`, and dependency notices are installed beside the application.
 

@@ -29,7 +29,7 @@ Version 0.2 implements a working core for the requested render-finishing workflo
 
 ## Processing architecture
 
-The source frame and imported passes are immutable, scene-linear RGBA float arrays on the Rust side. The source's precision is never replaced by the 8-bit preview. React holds the editable parameter state and serializable history. A project stores that state and media references.
+The source frame and imported passes are immutable, scene-linear RGBA float arrays on the Rust side. The source's precision is never replaced by the 8-bit preview. ICC conversion targets linear sRGB directly with extended-range output; analytic matrix/TRC profiles can also preserve signed and HDR float input. Bounded ICC LUTs with over-range input require explicit source interpretation rather than undefined extrapolation. React holds the editable parameter state and serializable history. A project stores that state and media references.
 
 The processing order is explicit:
 
