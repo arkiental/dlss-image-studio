@@ -44,6 +44,7 @@ struct Backend {
     source: Vec<u8>,
     source_id: u64,
     neural_cache: Option<(neural::Key, Vec<u8>)>,
+    worker: Option<neural::Worker>,
     diagnostics: serde_json::Value,
 }
 static BACKEND: Mutex<Backend> = Mutex::new(Backend {
@@ -53,6 +54,7 @@ static BACKEND: Mutex<Backend> = Mutex::new(Backend {
     source: Vec::new(),
     source_id: 0,
     neural_cache: None,
+    worker: None,
     diagnostics: serde_json::Value::Null,
 });
 static REQUEST: AtomicU64 = AtomicU64::new(0);
@@ -111,10 +113,17 @@ impl Backend {
                 intensity: s.local.intensity,
                 tone: s.local.tone,
                 structure: s.local.structure,
+                resolution: s.processing_resolution,
             };
             if self.neural_cache.as_ref().map(|(k, _)| k) != Some(&key) {
-                let (pixels, diagnostic) =
-                    neural::render(&key, &self.source, self.width, self.height)?;
+                let (pixels, diagnostic) = neural::render(
+                    &mut self.worker,
+                    &key,
+                    &self.source,
+                    self.width,
+                    self.height,
+                    self.source_id,
+                )?;
                 app_log(&format!("[NEURAL] {}", diagnostic));
                 self.diagnostics = diagnostic;
                 self.neural_cache = Some((key, pixels));
@@ -217,19 +226,12 @@ impl StudioState {
     }
     fn preset(&mut self, style: &str) {
         self.style = style.into();
-        let p = match style {
-            "cinematic" => [16., -5., 8., -3., -8., -3.],
-            "natural" => [4., 2., 14., 2., 3., 0.],
-            _ => [0.; 6],
-        };
-        [
-            self.contrast,
-            self.gamma,
-            self.vibrance,
-            self.brightness,
-            self.saturation,
-            self.hue,
-        ] = p;
+        self.neural.style = match style {
+            "cinematic" => "Cinematic",
+            "natural" => "Natural",
+            _ => "Default",
+        }
+        .into();
     }
 }
 async fn blocking<T: Send + 'static>(
@@ -486,7 +488,8 @@ fn main() {
         .expect("Unable to initialize application")
         .run(|_, event| {
             if let tauri::RunEvent::Exit = event {
-                if let Ok(_guard) = BACKEND.lock() {
+                if let Ok(mut guard) = BACKEND.lock() {
+                    guard.worker = None;
                     unsafe { studio_shutdown() };
                 }
             }
@@ -601,6 +604,24 @@ mod tests {
             serde_json::to_vec_pretty(&measurements).unwrap(),
         )
         .unwrap();
+        let mut performance = Vec::new();
+        for resolution in [100., 50., 25., 1., 100.] {
+            s.processing_resolution = resolution;
+            for iteration in 0..4 {
+                s.local.tone = 0.8 + iteration as f32 * 0.1;
+                let start = std::time::Instant::now();
+                println!("Performance test resolution {resolution}, iteration {iteration}");
+                let out = b.process(&s).unwrap();
+                assert_eq!(out.len(), b.source.len());
+                performance.push(serde_json::json!({"resolution":resolution,"iteration":iteration,"total_ms":start.elapsed().as_secs_f64()*1000.,"diagnostics":b.diagnostics}));
+            }
+        }
+        std::fs::write(
+            folder.join("performance.json"),
+            serde_json::to_vec_pretty(&performance).unwrap(),
+        )
+        .unwrap();
+        s.processing_resolution = 100.;
         s.local.scope = AdjustmentScope::Region;
         let region = b.process(&s).unwrap();
         assert!(region[0..3]
@@ -649,6 +670,7 @@ mod tests {
             tauri::ipc::InvokeResponseBody::Raw(bytes) => assert_eq!(bytes, expected),
             _ => panic!("Expected raw preview pixels"),
         }
+        BACKEND.lock().unwrap().worker = None;
         println!("RTX neural controls, cached preview/export equality, region mask, reload, odd dimensions and alpha passed: {}",serde_json::Value::Object(measurements));
     }
     #[test]

@@ -49,6 +49,8 @@ type Capability = {
   runtime_ready: boolean;
   runtime_path: string;
   neural_diagnostics?: {
+    round_trip_ms?: number;
+    evaluation_ms?: number;
     feature_evaluations?: number;
     ngx?: { create_result?: string; evaluate_result?: string };
   };
@@ -144,6 +146,7 @@ export default function App() {
     full = useRef<HTMLCanvasElement | null>(null),
     worker = useRef<Worker | null>(null),
     version = useRef(0),
+    displayedVersion = useRef(0),
     sourceReady = useRef(false),
     sourceGeneration = useRef(0),
     input = useRef<HTMLInputElement>(null),
@@ -202,7 +205,7 @@ export default function App() {
         if (generation !== sourceGeneration.current) return;
         source.current = c;
         sourceReady.current = true;
-        setSourceRevision(v => v + 1);
+        setSourceRevision((v) => v + 1);
         setDimensions({ w: c.width, h: c.height });
       } catch (error) {
         if (generation !== sourceGeneration.current) return;
@@ -286,51 +289,51 @@ export default function App() {
   useEffect(() => {
     const id = ++version.current;
     setBusy(true);
-    const timer = setTimeout(
-      async () => {
-        if (!source.current || !sourceReady.current) return;
-        setBusy(true);
-        setCompletedPreview({ key: "", url: "" });
-        try {
-          if (isTauri()) {
-            const bytes = await invoke<ArrayBuffer>("process_image", {
-              state,
-              sourceId: sourceGeneration.current,
-            });
-            if (id !== version.current) return;
-            draw(
-              new ImageData(
-                new Uint8ClampedArray(bytes),
-                source.current.width,
-                source.current.height,
-              ),
-            );
-            setCompletedPreview({ key: processingKey, url });
-            setBusy(false);
-            void invoke<Capability>("capabilities")
-              .then(setCap)
-              .catch((e) => notify(String(e)));
-          } else {
-            if (state.neural.enabled)
-              throw new Error("Neural rendering requires the Windows app.");
-            const c = source.current;
-            worker.current?.postMessage({
-              id,
-              key: processingKey,
-              sourceUrl: url,
-              state,
-              image: c.getContext("2d")!.getImageData(0, 0, c.width, c.height),
-            });
-          }
-        } catch (e) {
-          if (id === version.current) {
-            if (String(e) !== "Superseded preview") notify(String(e));
-            setBusy(false);
-          }
+    const timer = setTimeout(async () => {
+      if (!source.current || !sourceReady.current) return;
+      setBusy(true);
+      setCompletedPreview({ key: "", url: "" });
+      try {
+        if (isTauri()) {
+          const requestSource = sourceGeneration.current;
+          const width = source.current.width,
+            height = source.current.height;
+          const bytes = await invoke<ArrayBuffer>("process_image", {
+            state,
+            sourceId: requestSource,
+          });
+          if (
+            requestSource !== sourceGeneration.current ||
+            id < displayedVersion.current
+          )
+            return;
+          displayedVersion.current = id;
+          draw(new ImageData(new Uint8ClampedArray(bytes), width, height));
+          if (id !== version.current) return; // Show warm intermediate frames; only the latest can be exported.
+          setCompletedPreview({ key: processingKey, url });
+          setBusy(false);
+          void invoke<Capability>("capabilities")
+            .then(setCap)
+            .catch((e) => notify(String(e)));
+        } else {
+          if (state.neural.enabled)
+            throw new Error("Neural rendering requires the Windows app.");
+          const c = source.current;
+          worker.current?.postMessage({
+            id,
+            key: processingKey,
+            sourceUrl: url,
+            state,
+            image: c.getContext("2d")!.getImageData(0, 0, c.width, c.height),
+          });
         }
-      },
-      state.neural.enabled ? 450 : 65,
-    );
+      } catch (e) {
+        if (id === version.current) {
+          if (String(e) !== "Superseded preview") notify(String(e));
+          setBusy(false);
+        }
+      }
+    }, 16);
     return () => clearTimeout(timer);
   }, [processingKey, sourceRevision]);
   useEffect(drawZoom, [state.zoom, region, fit.width]);
@@ -681,7 +684,7 @@ export default function App() {
           </section>
           <section className="local-panel">
             <div className="section-heading">
-              <h2>Neural Rendering</h2>
+              <h2>Neural Adjustments</h2>
               <div
                 className="scope-switch"
                 role="group"
@@ -703,6 +706,7 @@ export default function App() {
                 onClick={() =>
                   setState((s) => ({
                     ...s,
+                    style: "neutral",
                     neural: { ...s.neural, style: "Default" },
                     local: {
                       ...defaults().local,
@@ -716,67 +720,26 @@ export default function App() {
                 Reset
               </button>
             </div>
-            <div className="neural-toolbar">
-              <label>
-                <input
-                  type="checkbox"
-                  aria-label="Enable neural rendering"
-                  checked={state.neural.enabled}
-                  disabled={!isTauri()}
-                  onChange={(e) =>
-                    setState((s) => ({
-                      ...s,
-                      neural: { ...s.neural, enabled: e.target.checked },
-                    }))
-                  }
-                />{" "}
-                Enable neural rendering
-              </label>
-              <label>
-                Neural style{" "}
-                <select
-                  aria-label="Neural style"
-                  disabled={!state.neural.enabled}
-                  value={state.neural.style}
-                  onChange={(e) =>
-                    setState((s) => ({
-                      ...s,
-                      neural: {
-                        ...s.neural,
-                        style: e.target.value as StudioState["neural"]["style"],
-                      },
-                    }))
-                  }
-                >
-                  {["Default", "Natural", "Cinematic"].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-              </label>
-              <span role="status">
-                {!isTauri()
-                  ? "Browser: color adjustments only"
-                  : !state.neural.enabled
-                    ? "Neural rendering off"
-                    : busy
-                      ? "Evaluating… previous image shown"
-                      : previewReady
-                        ? cap?.neural_rendering
-                        : "Neural result unavailable · check Settings"}
-              </span>
-            </div>
-            <p className="adjustment-hint">
+            <p className="adjustment-hint" role="status">
+              {!isTauri()
+                ? "Browser preview · neural rendering requires the Windows app"
+                : !state.neural.enabled
+                  ? "Neural rendering off · enable in Settings"
+                  : busy
+                    ? "Processing…"
+                    : previewReady
+                      ? `NGX verified · ${Math.round(cap?.neural_diagnostics?.round_trip_ms ?? 0)} ms`
+                      : "Neural result unavailable · check Settings"}
+              {" · "}
               {state.local.scope === "image"
-                ? "Applies to the whole image. Dashed box: zoom inspection only."
-                : "Applies inside the dashed box. Drag it to choose the area."}{" "}
-              Provider parameters: 0–2, default 1. Tone and structure control
-              neural reconstruction; brightness is separate.
+                ? "Whole image; dashed box inspects zoom"
+                : "Neural effect limited to the selected area"}
             </p>
             <div className="local-controls">
               {(["intensity", "tone", "structure"] as const).map((key, i) => (
                 <Slider
                   key={key}
-                  label={["Intensity", "Tone", "Structure"][i]}
+                  label={["Intensity", "Local tone", "Local structure"][i]}
                   value={state.local[key]}
                   min={0}
                   max={2}
@@ -794,30 +757,81 @@ export default function App() {
         </div>
         <aside className="right-panel">
           <div className="look">
-            <h2>Color Adjustments</h2>
+            <h2>Adjust Look</h2>
             <section className="style-section">
-              <h3>Color preset</h3>
+              <h3>Style</h3>
               <div className="styles">
-                {(["cinematic", "neutral", "natural"] as Style[]).map(
-                  (style) => (
-                    <button
-                      className={state.style === style ? "selected" : ""}
-                      key={style}
-                      onClick={() =>
-                        setState((s) => ({ ...s, ...presets[style], style }))
-                      }
-                    >
-                      {style[0].toUpperCase() + style.slice(1)}
-                    </button>
-                  ),
-                )}
+                {(["Cinematic", "Default", "Natural"] as const).map((style) => (
+                  <button
+                    key={style}
+                    className={state.neural.style === style ? "selected" : ""}
+                    disabled={!state.neural.enabled}
+                    onClick={() =>
+                      setState((s) => ({
+                        ...s,
+                        style:
+                          style === "Default"
+                            ? "neutral"
+                            : (style.toLowerCase() as Style),
+                        neural: { ...s.neural, style },
+                      }))
+                    }
+                  >
+                    {style === "Default" ? "Neutral" : style}
+                  </button>
+                ))}
               </div>
             </section>
-            <p className="adjustment-hint">
-              Original resolution · {dimensions.w} × {dimensions.h}
-              <br />
-              Neural upscaling is not enabled. Exports keep these dimensions.
-            </p>
+            <section className="resolution">
+              <h3 title="Neural evaluation resolution. Exports retain the original image dimensions.">
+                Resolution
+              </h3>
+              <div className="resolution-row">
+                <div className="slider-wrap">
+                  <input
+                    disabled={!state.neural.enabled}
+                    aria-label="Resolution"
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={state.processingResolution}
+                    style={
+                      {
+                        "--fill": state.processingResolution + "%",
+                      } as CSSProperties
+                    }
+                    onChange={(e) =>
+                      setState((s) => ({
+                        ...s,
+                        processingResolution: +e.target.value,
+                      }))
+                    }
+                  />
+                  <div className="ticks" />
+                </div>
+                <span>
+                  <input
+                    disabled={!state.neural.enabled}
+                    aria-label="Resolution value"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={state.processingResolution}
+                    onChange={(e) =>
+                      setState((s) => ({
+                        ...s,
+                        processingResolution: clamp(+e.target.value, 1, 100),
+                      }))
+                    }
+                  />
+                  %
+                </span>
+              </div>
+              <div className="range-labels">
+                <span>1%</span>
+                <span>100%</span>
+              </div>
+            </section>
             <div className="global-controls">
               {(Object.keys(icons) as (keyof Adjustments)[]).map((key) => (
                 <Slider
@@ -937,6 +951,40 @@ export default function App() {
               {cap?.detail ??
                 "Browser mode supports conventional color adjustments only. Use the Windows application with a separately installed Visual Enhancer v13.2 runtime for neural rendering."}
             </p>
+            <label className="settings-toggle">
+              <input
+                type="checkbox"
+                aria-label="Enable neural rendering"
+                checked={state.neural.enabled}
+                disabled={!isTauri()}
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    neural: { ...s.neural, enabled: e.target.checked },
+                  }))
+                }
+              />{" "}
+              Enable neural rendering
+            </label>
+            <label className="settings-toggle">
+              Color preset{" "}
+              <select
+                aria-label="Color preset"
+                defaultValue="neutral"
+                onChange={(e) =>
+                  setState((s) => ({
+                    ...s,
+                    ...presets[e.target.value as Style],
+                  }))
+                }
+              >
+                {["neutral", "cinematic", "natural"].map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
             <p>Runtime: {cap?.runtime_path || "Not configured"}</p>
             <button
               disabled={!isTauri()}
@@ -976,8 +1024,9 @@ export default function App() {
             </p>
             <p>
               Exports retain source dimensions. Inputs are decoded as sRGB;
-              output is 8-bit sRGB. Small or odd-sized inputs are edge-padded
-              for the runtime, then cropped back without scaling.
+              output is 8-bit sRGB. Resolution sets the neural evaluation size.
+              Lower values trade detail for speed; output is resized to source
+              dimensions.
             </p>
             <small>
               DLSS Image Studio 0.1.0 · Independent application, not affiliated

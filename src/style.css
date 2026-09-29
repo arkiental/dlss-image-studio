@@ -736,3 +736,16 @@ select:disabled {
 .settings-dialog p {
   overflow-wrap: anywhere;
 }
+
+.settings-toggle {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+}
+.settings-toggle select {
+  background: #20201e;
+  color: inherit;
+  padding: 5px;
+  border: 1px solid var(--border);
+}

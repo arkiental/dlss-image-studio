@@ -1,0 +1,222 @@
+[
+  {
+    "resolution": 100.0,
+    "iteration": 0,
+    "native_pipeline_ms": 32.0,
+    "neural_evaluation_ms": 22.82,
+    "worker_round_trip_ms": 24.49,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 1,
+    "native_pipeline_ms": 34.25,
+    "neural_evaluation_ms": 22.98,
+    "worker_round_trip_ms": 24.78,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 2,
+    "native_pipeline_ms": 32.56,
+    "neural_evaluation_ms": 23.07,
+    "worker_round_trip_ms": 24.68,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 3,
+    "native_pipeline_ms": 32.2,
+    "neural_evaluation_ms": 22.95,
+    "worker_round_trip_ms": 24.59,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 50.0,
+    "iteration": 0,
+    "native_pipeline_ms": 2359.61,
+    "neural_evaluation_ms": 256.89,
+    "worker_round_trip_ms": 2115.38,
+    "neural_dimensions": {
+      "height": 504,
+      "width": 780
+    }
+  },
+  {
+    "resolution": 50.0,
+    "iteration": 1,
+    "native_pipeline_ms": 22.75,
+    "neural_evaluation_ms": 9.54,
+    "worker_round_trip_ms": 14.95,
+    "neural_dimensions": {
+      "height": 504,
+      "width": 780
+    }
+  },
+  {
+    "resolution": 50.0,
+    "iteration": 2,
+    "native_pipeline_ms": 22.73,
+    "neural_evaluation_ms": 9.29,
+    "worker_round_trip_ms": 14.48,
+    "neural_dimensions": {
+      "height": 504,
+      "width": 780
+    }
+  },
+  {
+    "resolution": 50.0,
+    "iteration": 3,
+    "native_pipeline_ms": 21.89,
+    "neural_evaluation_ms": 9.62,
+    "worker_round_trip_ms": 14.59,
+    "neural_dimensions": {
+      "height": 504,
+      "width": 780
+    }
+  },
+  {
+    "resolution": 25.0,
+    "iteration": 0,
+    "native_pipeline_ms": 2318.55,
+    "neural_evaluation_ms": 250.21,
+    "worker_round_trip_ms": 2088.83,
+    "neural_dimensions": {
+      "height": 252,
+      "width": 390
+    }
+  },
+  {
+    "resolution": 25.0,
+    "iteration": 1,
+    "native_pipeline_ms": 18.09,
+    "neural_evaluation_ms": 5.83,
+    "worker_round_trip_ms": 10.4,
+    "neural_dimensions": {
+      "height": 252,
+      "width": 390
+    }
+  },
+  {
+    "resolution": 25.0,
+    "iteration": 2,
+    "native_pipeline_ms": 19.0,
+    "neural_evaluation_ms": 5.66,
+    "worker_round_trip_ms": 10.53,
+    "neural_dimensions": {
+      "height": 252,
+      "width": 390
+    }
+  },
+  {
+    "resolution": 25.0,
+    "iteration": 3,
+    "native_pipeline_ms": 19.57,
+    "neural_evaluation_ms": 6.22,
+    "worker_round_trip_ms": 11.18,
+    "neural_dimensions": {
+      "height": 252,
+      "width": 390
+    }
+  },
+  {
+    "resolution": 1.0,
+    "iteration": 0,
+    "native_pipeline_ms": 2350.22,
+    "neural_evaluation_ms": 246.09,
+    "worker_round_trip_ms": 2101.24,
+    "neural_dimensions": {
+      "height": 128,
+      "width": 128
+    }
+  },
+  {
+    "resolution": 1.0,
+    "iteration": 1,
+    "native_pipeline_ms": 17.24,
+    "neural_evaluation_ms": 5.49,
+    "worker_round_trip_ms": 9.69,
+    "neural_dimensions": {
+      "height": 128,
+      "width": 128
+    }
+  },
+  {
+    "resolution": 1.0,
+    "iteration": 2,
+    "native_pipeline_ms": 16.53,
+    "neural_evaluation_ms": 5.1,
+    "worker_round_trip_ms": 9.22,
+    "neural_dimensions": {
+      "height": 128,
+      "width": 128
+    }
+  },
+  {
+    "resolution": 1.0,
+    "iteration": 3,
+    "native_pipeline_ms": 16.47,
+    "neural_evaluation_ms": 4.62,
+    "worker_round_trip_ms": 8.76,
+    "neural_dimensions": {
+      "height": 128,
+      "width": 128
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 0,
+    "native_pipeline_ms": 2353.78,
+    "neural_evaluation_ms": 272.93,
+    "worker_round_trip_ms": 2119.61,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 1,
+    "native_pipeline_ms": 33.49,
+    "neural_evaluation_ms": 24.08,
+    "worker_round_trip_ms": 25.77,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 2,
+    "native_pipeline_ms": 34.59,
+    "neural_evaluation_ms": 24.64,
+    "worker_round_trip_ms": 26.32,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  },
+  {
+    "resolution": 100.0,
+    "iteration": 3,
+    "native_pipeline_ms": 33.07,
+    "neural_evaluation_ms": 22.96,
+    "worker_round_trip_ms": 24.65,
+    "neural_dimensions": {
+      "height": 1008,
+      "width": 1560
+    }
+  }
+]

@@ -17,6 +17,7 @@ pub struct Key {
     pub intensity: f32,
     pub tone: f32,
     pub structure: f32,
+    pub resolution: f32,
 }
 pub fn config_path() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
@@ -69,114 +70,171 @@ impl Drop for Job {
     }
 }
 
+type Reply = Result<(Vec<u8>, serde_json::Value), String>;
+type Request = (serde_json::Value, Option<Vec<u8>>);
+pub struct Worker {
+    root: PathBuf,
+    dimensions: (u32, u32),
+    child: std::process::Child,
+    sender: std::sync::mpsc::Sender<Request>,
+    replies: std::sync::mpsc::Receiver<Reply>,
+    source: Option<(u64, u32, u32)>,
+    thread: Option<std::thread::JoinHandle<()>>,
+    _job: Job,
+}
+impl Drop for Worker {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+        // Replacing the sender closes the thread's request stream.
+        let (dummy, _) = std::sync::mpsc::channel();
+        self.sender = dummy;
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+impl Worker {
+    fn start(root: &Path, dimensions: (u32, u32)) -> Result<Self, String> {
+        use std::io::{BufRead, Read, Write};
+        let python = interpreter(root)?;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        let job =
+            Job(std::env::temp_dir().join(format!("studio-neural-{}-{stamp}", std::process::id())));
+        std::fs::create_dir(&job.0).map_err(|e| e.to_string())?;
+        std::fs::write(job.0.join("adapter.py"), include_str!("neural_adapter.py"))
+            .map_err(|e| e.to_string())?;
+        let mut command = Command::new(python);
+        command
+            .arg("-u")
+            .arg(job.0.join("adapter.py"))
+            .arg(root)
+            .current_dir(root)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(std::fs::File::create(job.0.join("stderr.txt")).map_err(|e| e.to_string())?);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x08000000);
+        }
+        let mut child = command
+            .spawn()
+            .map_err(|e| format!("Cannot start neural runtime: {e}"))?;
+        let mut input = child.stdin.take().ok_or("Missing neural input pipe")?;
+        let mut output =
+            std::io::BufReader::new(child.stdout.take().ok_or("Missing neural output pipe")?);
+        let (sender, requests) = std::sync::mpsc::channel::<Request>();
+        let (results, replies) = std::sync::mpsc::channel();
+        let thread = std::thread::spawn(move || {
+            for (request, pixels) in requests {
+                let response = (|| -> Reply {
+                    serde_json::to_writer(&mut input, &request).map_err(|e| e.to_string())?;
+                    input.write_all(b"\n").map_err(|e| e.to_string())?;
+                    if let Some(bytes) = pixels {
+                        input.write_all(&bytes).map_err(|e| e.to_string())?;
+                    }
+                    input.flush().map_err(|e| e.to_string())?;
+                    let mut line = String::new();
+                    output
+                        .by_ref()
+                        .take(65536)
+                        .read_line(&mut line)
+                        .map_err(|e| e.to_string())?;
+                    let value: serde_json::Value = serde_json::from_str(&line).map_err(|e| {
+                        format!("Neural runtime stopped or returned invalid diagnostics: {e}")
+                    })?;
+                    if let Some(error) = value["error"].as_str() {
+                        return Err(format!("Neural evaluation failed: {error}"));
+                    }
+                    validate_status(&value)?;
+                    let expected = request["width"].as_u64().unwrap_or(0)
+                        * request["height"].as_u64().unwrap_or(0)
+                        * 4;
+                    if expected == 0
+                        || expected > 256_000_000
+                        || value["bytes"].as_u64() != Some(expected)
+                    {
+                        return Err("Unexpected neural output size".into());
+                    }
+                    let mut bytes = vec![0; expected as usize];
+                    output.read_exact(&mut bytes).map_err(|e| e.to_string())?;
+                    Ok((bytes, value["bridge_status"].clone()))
+                })();
+                let failed = response.is_err();
+                if results.send(response).is_err() || failed {
+                    break;
+                }
+            }
+        });
+        Ok(Self {
+            root: root.to_path_buf(),
+            dimensions,
+            child,
+            sender,
+            replies,
+            source: None,
+            thread: Some(thread),
+            _job: job,
+        })
+    }
+}
 pub fn render(
+    worker: &mut Option<Worker>,
     key: &Key,
     source: &[u8],
     width: u32,
     height: u32,
-) -> Result<(Vec<u8>, serde_json::Value), String> {
-    let python = interpreter(&key.root)?;
-    let root = key.root.canonicalize().map_err(|e| e.to_string())?;
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_nanos();
-    let job =
-        Job(std::env::temp_dir().join(format!("studio-neural-{}-{stamp}", std::process::id())));
-    std::fs::create_dir(&job.0).map_err(|e| e.to_string())?;
-    let io = |e: std::io::Error| format!("Neural runtime I/O failed: {e}");
-    std::fs::write(job.0.join("adapter.py"), include_str!("neural_adapter.py")).map_err(io)?;
-    std::fs::write(
-        job.0.join("request.json"),
-        serde_json::to_vec(key).map_err(|e| e.to_string())?,
-    )
-    .map_err(io)?;
-    // Edge-pad small/odd images for the provider; crop back without resampling.
-    let pw = width.max(64).next_multiple_of(2);
-    let ph = height.max(64).next_multiple_of(2);
-    let padded = image::RgbaImage::from_fn(pw, ph, |x, y| {
-        let i = (y.min(height - 1) as usize * width as usize + x.min(width - 1) as usize) * 4;
-        image::Rgba(source[i..i + 4].try_into().unwrap())
-    });
-    padded
-        .save(job.0.join("input.png"))
-        .map_err(|e| e.to_string())?;
-    let stderr = std::fs::File::create(job.0.join("stderr.txt")).map_err(io)?;
-    let mut command = Command::new(python);
-    command
-        .arg(job.0.join("adapter.py"))
-        .arg(&root)
-        .arg(&job.0)
-        .current_dir(&root)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(stderr);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
+    source_id: u64,
+) -> Reply {
+    interpreter(&key.root)?;
+    let sw = ((width as f32 * key.resolution / 100.).round() as u32).max(1);
+    let sh = ((height as f32 * key.resolution / 100.).round() as u32).max(1);
+    let dimensions = (
+        sw.max(128).next_multiple_of(2),
+        sh.max(128).next_multiple_of(2),
+    );
+    if worker.as_ref().map(|w| (&w.root, w.dimensions)) != Some((&key.root, dimensions)) {
+        *worker = None;
+        *worker = Some(Worker::start(&key.root, dimensions)?);
     }
-    let mut child = command
-        .spawn()
-        .map_err(|e| format!("Cannot start neural runtime: {e}"))?;
     let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                if !status.success() {
-                    let error =
-                        std::fs::read_to_string(job.0.join("stderr.txt")).unwrap_or_default();
-                    return Err(format!(
-                        "Neural evaluation failed ({status}): {}",
-                        error
-                            .chars()
-                            .rev()
-                            .take(1600)
-                            .collect::<String>()
-                            .chars()
-                            .rev()
-                            .collect::<String>()
-                    ));
-                }
-                break;
-            }
-            Ok(None) if start.elapsed() < Duration::from_secs(120) => {
-                std::thread::sleep(Duration::from_millis(50))
-            }
-            other => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(format!(
-                    "Neural runtime timed out or could not be monitored: {other:?}"
-                ));
-            }
+    let current = worker.as_mut().unwrap();
+    let identity = (source_id, width, height);
+    let send_source = current.source != Some(identity);
+    let request = serde_json::json!({"controls":key,"width":width,"height":height,"small_width":sw,"small_height":sh,"source_bytes":if send_source {source.len()} else {0}});
+    let result = current
+        .sender
+        .send((
+            request,
+            if send_source {
+                Some(source.to_vec())
+            } else {
+                None
+            },
+        ))
+        .map_err(|_| "Neural worker stopped".to_string())
+        .and_then(|_| {
+            current
+                .replies
+                .recv_timeout(Duration::from_secs(120))
+                .map_err(|e| format!("Neural worker timeout or disconnect: {e}"))
+        })
+        .and_then(|result| result);
+    match result {
+        Ok((bytes, mut status)) => {
+            current.source = Some(identity);
+            status["round_trip_ms"] = (start.elapsed().as_secs_f64() * 1000.).into();
+            Ok((bytes, status))
+        }
+        Err(error) => {
+            *worker = None;
+            Err(error)
         }
     }
-    let result: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(job.0.join("result.json")).map_err(io)?)
-            .map_err(|e| format!("Invalid neural diagnostics: {e}"))?;
-    validate_status(&result)?;
-    let path = PathBuf::from(
-        result["output_path"]
-            .as_str()
-            .ok_or("Missing neural output")?,
-    )
-    .canonicalize()
-    .map_err(io)?;
-    if !path.starts_with(job.0.canonicalize().map_err(io)?) {
-        return Err("Runtime output escaped the processing directory".into());
-    }
-    let output = image::open(path).map_err(|e| e.to_string())?.to_rgba8();
-    if output.dimensions() != (pw, ph) {
-        return Err("Neural runtime returned unexpected dimensions".into());
-    }
-    let mut cropped = image::imageops::crop_imm(&output, 0, 0, width, height)
-        .to_image()
-        .into_raw();
-    for (out, original) in cropped.chunks_exact_mut(4).zip(source.chunks_exact(4)) {
-        out[3] = original[3];
-    }
-    Ok((cropped, result["bridge_status"].clone()))
 }
 
 #[cfg(test)]

@@ -28,14 +28,20 @@ if (
     .inputValue()) !== "35"
 )
   throw Error("Slider value failed");
-await page.getByRole("button", { name: "Natural", exact: true }).click();
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+await page
+  .getByRole("combobox", { name: "Color preset" })
+  .selectOption("natural");
 if (
   (await page
     .getByRole("spinbutton", { name: "Vibrance value", exact: true })
     .inputValue()) !== "14"
 )
   throw Error("Preset failed");
-await page.getByRole("button", { name: "Neutral", exact: true }).click();
+await page
+  .getByRole("combobox", { name: "Color preset" })
+  .selectOption("neutral");
+await page.getByRole("button", { name: "Close settings", exact: true }).click();
 const settled = () =>
   page
     .getByRole("button", { name: "Export to File", exact: true })
@@ -63,16 +69,18 @@ const pixels = () =>
   });
 await settled();
 if (
-  !(await page.getByRole("slider", { name: "Tone", exact: true }).isDisabled())
+  !(await page
+    .getByRole("slider", { name: "Local tone", exact: true })
+    .isDisabled())
 )
   throw Error("Browser neural controls must be disabled");
+await page.getByRole("button", { name: "Settings", exact: true }).click();
 if (
   !(await page
     .getByRole("checkbox", { name: "Enable neural rendering" })
     .isDisabled())
 )
   throw Error("Browser must not pretend to support neural rendering");
-await page.getByRole("button", { name: "Settings", exact: true }).click();
 await page.screenshot({ path: "docs/screenshots/settings.png" });
 await page.getByRole("button", { name: "Close settings", exact: true }).click();
 const region = page.getByRole("slider", { name: "Zoom inspection region" });
