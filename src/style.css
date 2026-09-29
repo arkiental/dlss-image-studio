@@ -109,7 +109,7 @@ main {
 .left-column {
   min-width: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) 187px;
+  grid-template-rows: minmax(0, 1fr) 213px;
   gap: 12px;
 }
 .image-panel,
@@ -576,7 +576,7 @@ input::-webkit-outer-spin-button {
     grid-template-columns: minmax(0, 1fr) 390px;
   }
   .left-column {
-    grid-template-rows: minmax(0, 1fr) 160px;
+    grid-template-rows: minmax(0, 1fr) 194px;
   }
   .look {
     padding: 12px 17px;
@@ -641,5 +641,54 @@ input::-webkit-outer-spin-button {
   }
   h1 {
     font-size: 30px;
+  }
+}
+
+.scope-switch {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+.scope-switch button {
+  border: 1px solid var(--border);
+  font-size: 13px;
+  padding: 6px 9px;
+}
+.scope-switch button[aria-pressed="true"] {
+  background: #342f25;
+  border-color: var(--gold);
+}
+.adjustment-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #bbb6aa;
+}
+.local-controls {
+  margin-top: 10px;
+}
+@media (max-width: 1200px) {
+  .local-panel {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .local-panel .section-heading h2 {
+    font-size: 21px;
+  }
+  .local-panel .section-heading {
+    gap: 8px;
+  }
+  .scope-switch {
+    margin-right: 0;
+  }
+  .local-control {
+    padding: 0 10px;
+  }
+  .local-control .control-label {
+    gap: 6px;
+  }
+  .local-control .control-label input {
+    width: 48px;
   }
 }

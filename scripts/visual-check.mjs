@@ -18,6 +18,7 @@ await page.waitForFunction(
 );
 await page.waitForTimeout(1500);
 fs.mkdirSync("docs/screenshots", { recursive: true });
+fs.mkdirSync("test-results", { recursive: true });
 await page.screenshot({ path: "docs/screenshots/studio-1536.png" });
 await page.getByRole("slider", { name: "Contrast", exact: true }).fill("35");
 await page.waitForTimeout(500);
@@ -35,20 +36,78 @@ if (
 )
   throw Error("Preset failed");
 await page.getByRole("button", { name: "Neutral", exact: true }).click();
+const settled = () =>
+  page
+    .getByRole("button", { name: "Export to File", exact: true })
+    .waitFor({ state: "visible" })
+    .then(() =>
+      page.waitForFunction(
+        () =>
+          !document.querySelector(".export-buttons button:nth-child(2)")
+            .disabled,
+      ),
+    );
+const pixels = () =>
+  page.locator(".main-image").evaluate((c) => {
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    return {
+      corner: Array.from(d.slice(0, 4)),
+      center: Array.from(
+        d.slice(
+          (Math.floor(c.height / 2) * c.width + Math.floor(c.width / 2)) * 4,
+          (Math.floor(c.height / 2) * c.width + Math.floor(c.width / 2)) * 4 +
+            4,
+        ),
+      ),
+    };
+  });
+await settled();
+const neutralPixels = await pixels();
+await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.7");
+await settled();
+const wholePixels = await pixels();
+if (
+  wholePixels.corner[0] <= neutralPixels.corner[0] ||
+  wholePixels.center[0] <= neutralPixels.center[0]
+)
+  throw Error("Whole-image tone failed");
+await page.screenshot({ path: "test-results/whole-image-tone.png" });
+await page.getByRole("button", { name: "Selected area", exact: true }).click();
+await settled();
+if (
+  JSON.stringify((await pixels()).center) !==
+  JSON.stringify(neutralPixels.center)
+)
+  throw Error("Selected-area adjustment leaked outside mask");
+await page.screenshot({ path: "test-results/selected-area-tone.png" });
+await page.getByRole("button", { name: "Whole image", exact: true }).click();
+await settled();
+const beforeMove = await page
+  .locator(".main-image")
+  .evaluate((c) => c.toDataURL());
+await page.getByRole("slider", { name: "Zoom inspection region" }).focus();
+await page.keyboard.press("ArrowRight");
+if (
+  (await page.locator(".main-image").evaluate((c) => c.toDataURL())) !==
+  beforeMove
+)
+  throw Error("Zoom inspection changed whole-image processing");
+await page.getByRole("button", { name: "Reset", exact: true }).click();
+await settled();
 await page.getByRole("slider", { name: "Resolution", exact: true }).fill("1");
 await page.getByRole("slider", { name: "Resolution", exact: true }).fill("100");
-await page.getByRole("slider", { name: "Local tone", exact: true }).fill("0.5");
+await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.5");
 await page.getByRole("button", { name: "Reset", exact: true }).click();
 if (
   (await page
-    .getByRole("spinbutton", { name: "Local tone value", exact: true })
+    .getByRole("spinbutton", { name: "Tone value", exact: true })
     .inputValue()) !== "0.00"
 )
   throw Error("Reset failed");
 await page.getByRole("button", { name: "Settings", exact: true }).click();
 await page.screenshot({ path: "docs/screenshots/settings.png" });
 await page.getByRole("button", { name: "Close settings", exact: true }).click();
-const region = page.getByRole("slider", { name: "Local adjustment region" });
+const region = page.getByRole("slider", { name: "Zoom inspection region" });
 const before = await region.boundingBox();
 await region.focus();
 await page.keyboard.press("ArrowRight");
@@ -60,12 +119,40 @@ await page.keyboard.press("z");
 if (!(await page.locator(".zoom-panel").isVisible()))
   throw Error("Zoom restore failed");
 await page.screenshot({ path: "docs/screenshots/studio-tested.png" });
+await page.getByRole("slider", { name: "Tone", exact: true }).fill("0.5");
+await page.getByRole("slider", { name: "Intensity", exact: true }).fill("2.1");
+await settled();
+const adjustedBeforeReload = await page
+  .locator(".main-image")
+  .evaluate((c) => c.toDataURL());
 await page.locator('input[type="file"]').setInputFiles("public/sample-car.png");
-await page.waitForTimeout(700);
+await settled();
 const downloadPromise = page.waitForEvent("download");
 await page.getByRole("button", { name: "Export to File", exact: true }).click();
 const download = await downloadPromise;
 await download.saveAs("test-results/browser-export.png");
+if (
+  (await page.locator(".main-image").evaluate((c) => c.toDataURL())) !==
+  adjustedBeforeReload
+)
+  throw Error("Reload did not apply current adjustments");
+const exported = fs
+  .readFileSync("test-results/browser-export.png")
+  .toString("base64");
+const matches = await page.evaluate(async (b64) => {
+  const blob = await (await fetch("data:image/png;base64," + b64)).blob();
+  const bitmap = await createImageBitmap(blob);
+  const c = document.createElement("canvas");
+  c.width = bitmap.width;
+  c.height = bitmap.height;
+  c.getContext("2d").drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return c.toDataURL() === document.querySelector(".main-image").toDataURL();
+}, exported);
+if (!matches) throw Error("Export pixels differ from adjusted preview");
+await page.getByRole("button", { name: "Reset", exact: true }).click();
+await settled();
+
 if (download.suggestedFilename() !== "sample-car-neutral.png")
   throw Error("Export filename mismatch");
 for (const scale of [1.25, 1.5, 2]) {

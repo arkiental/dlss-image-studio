@@ -5,7 +5,7 @@ extern "C" {
 #endif
 typedef struct StudioParams {
   float contrast, gamma, vibrance, brightness, saturation, hue, intensity, tone,
-      structure, x, y, width, height;
+      structure, x, y, width, height, whole_image;
 } StudioParams;
 int studio_initialize(void);
 const char *studio_capabilities(void);

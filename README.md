@@ -12,7 +12,7 @@ A Windows desktop image editor built with Tauri 2, React, TypeScript, Rust, and 
 - Ctrl+O, image drag-and-drop, and image paste through WebView2/browser clipboard events.
 - Non-destructive global contrast, gamma, vibrance, brightness, saturation and hue adjustments.
 - Cinematic, Neutral and Natural application presets.
-- Draggable feathered local adjustment region; intensity, tone and local detail adjustment.
+- Whole-image tone and detail adjustment, with explicit Selected area mode for a draggable feathered mask. Intensity scales tone and structure.
 - Movable full-resolution zoom inspection, wheel magnification, and Z to hide/show.
 - PNG, JPEG and TIFF exports at original dimensions, Windows image clipboard, and three-preset batch export.
 - D3D12 adapter enumeration, NVIDIA preference, real compute shaders, fences and diagnostics.
@@ -63,7 +63,7 @@ docs/                         Screenshots, QA notes and asset provenance
 
 ## Behavior and limits
 
-The resolution slider records a 1–100% neural processing request. Since NR is unavailable, it does not resample or otherwise change images. All current application adjustments and exports use source dimensions. The local rectangle is a feathered mask, never a crop. Tone and structure are application post-processing parameters, not NVIDIA parameters. Neutral defaults leave source pixels unchanged within 8-bit rounding; local structure is centered on the reference default of 0.80.
+The resolution slider records a 1–100% neural processing request. Since NR is unavailable, it does not resample or otherwise change images. All current application adjustments and exports use source dimensions. Tone and structure apply to the whole image by default. In **Whole image** mode the dashed box only selects the zoom inspection area; moving or hiding the zoom does not change processing. Choose **Selected area** to use the rectangle as a feathered mask, never a crop. Intensity scales tone and structure; with tone at 0 and structure at 0.80, changing intensity alone has no effect. Preview, clipboard and exports use the same scope. Export waits until the current preview is ready. Tone and structure are application post-processing parameters, not NVIDIA parameters. Neutral defaults leave source pixels unchanged within 8-bit rounding; local structure is centered on the reference default of 0.80.
 
 Input is decoded by WebView2 into sRGB, with browser EXIF orientation handling, then uploaded once per source. Shader math uses 32-bit floats, explicit sRGB transfer functions and alpha preservation. Final buffers/exports are 8-bit sRGB; HDR, 16-bit export, metadata round-tripping, and ICC-profile embedding are not implemented. JPEG drops alpha. Source limits are 64 megapixels and 16384 pixels per dimension; actual available GPU memory can impose lower limits.
 

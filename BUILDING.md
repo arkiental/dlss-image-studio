@@ -9,7 +9,7 @@
 - CMake 3.24 or later on PATH.
 - D3D12-capable GPU to run the editor/native smoke test. NVIDIA adapters are preferred, but ordinary color adjustments do not require RTX hardware.
 
-Run from a Developer PowerShell for VS 2022. A clean first build needs several GB for Rust dependencies and intermediates.
+Run from a Developer PowerShell for VS 2022. A clean first build needs several GB for Rust dependencies and intermediates. Non-Debug native builds explicitly define `NDEBUG`: the Rust CMake integration can override the usual release compiler flags, otherwise accidentally enabling the D3D12 debug layer in release builds.
 
 ## Development
 

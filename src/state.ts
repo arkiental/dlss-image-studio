@@ -11,7 +11,13 @@ export type Adjustments = {
 export interface StudioState extends Adjustments {
   style: Style;
   processingResolution: number;
-  local: { intensity: number; tone: number; structure: number; region: Rect };
+  local: {
+    scope: "image" | "region";
+    intensity: number;
+    tone: number;
+    structure: number;
+    region: Rect;
+  };
   zoom: {
     visible: boolean;
     factor: number;
@@ -28,6 +34,7 @@ export const defaults = (): StudioState => ({
   saturation: 0,
   hue: 0,
   local: {
+    scope: "image",
     intensity: 1.3,
     tone: 0,
     structure: 0.8,

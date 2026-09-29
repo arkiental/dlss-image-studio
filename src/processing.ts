@@ -51,10 +51,11 @@ export function processPixels(input: ImageData, state: StudioState): ImageData {
           (0.114 + 0.886 * c - 0.203 * s) * e,
       ];
       if (
-        x / input.width >= r.x &&
-        x / input.width <= r.x + r.width &&
-        y / input.height >= r.y &&
-        y / input.height <= r.y + r.height
+        state.local.scope === "image" ||
+        (x / input.width >= r.x &&
+          x / input.width <= r.x + r.width &&
+          y / input.height >= r.y &&
+          y / input.height <= r.y + r.height)
       ) {
         const edge = Math.min(
           (x / input.width - r.x) / r.width,
@@ -62,7 +63,10 @@ export function processPixels(input: ImageData, state: StudioState): ImageData {
           (y / input.height - r.y) / r.height,
           (r.y + r.height - y / input.height) / r.height,
         );
-        const mask = Math.min(1, Math.max(0, edge * 20));
+        const mask =
+          state.local.scope === "image"
+            ? 1
+            : Math.min(1, Math.max(0, edge * 20));
         rgb = rgb.map((v, k) => {
           const left = linear(
               src[(y * input.width + Math.max(0, x - 1)) * 4 + k] / 255,
@@ -89,4 +93,3 @@ export function processPixels(input: ImageData, state: StudioState): ImageData {
     }
   return out;
 }
-

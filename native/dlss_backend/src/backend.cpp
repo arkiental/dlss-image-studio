@@ -285,7 +285,7 @@ struct Backend {
     params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     params[0].DescriptorTable = {2, ranges};
     params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-    params[1].Constants = {0, 0, 15};
+    params[1].Constants = {0, 0, 16};
     D3D12_ROOT_SIGNATURE_DESC rd{};
     rd.NumParameters = 2;
     rd.pParameters = params;
@@ -414,7 +414,7 @@ struct Backend {
       StudioParams p;
       uint32_t w, h;
     } constants{p, width, height};
-    static_assert(sizeof(constants) == 60);
+    static_assert(sizeof(constants) == 64);
     begin();
     list->SetPipelineState(pipeline.Get());
     list->SetComputeRootSignature(root.Get());
@@ -422,7 +422,7 @@ struct Backend {
     list->SetDescriptorHeaps(1, heaps);
     list->SetComputeRootDescriptorTable(
         0, heap->GetGPUDescriptorHandleForHeapStart());
-    list->SetComputeRoot32BitConstants(1, 15, &constants, 0);
+    list->SetComputeRoot32BitConstants(1, 16, &constants, 0);
     list->Dispatch((width + 7) / 8, (height + 7) / 8, 1);
     transition(output.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                D3D12_RESOURCE_STATE_COPY_SOURCE);

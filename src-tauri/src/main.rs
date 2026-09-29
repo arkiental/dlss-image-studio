@@ -26,6 +26,7 @@ struct Params {
     y: f32,
     width: f32,
     height: f32,
+    whole_image: f32,
 }
 extern "C" {
     fn studio_initialize() -> i32;
@@ -98,8 +99,17 @@ struct Rect {
     width: f32,
     height: f32,
 }
+#[derive(Clone, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+enum AdjustmentScope {
+    Image,
+    #[default]
+    Region,
+}
 #[derive(Clone, Deserialize)]
 struct Local {
+    #[serde(default)]
+    scope: AdjustmentScope,
     intensity: f32,
     tone: f32,
     structure: f32,
@@ -146,6 +156,7 @@ impl StudioState {
             y: bounded(r.y, 0., 1.)?,
             width: bounded(r.width, 0.00001, 1.)?,
             height: bounded(r.height, 0.00001, 1.)?,
+            whole_image: if matches!(self.local.scope, AdjustmentScope::Image) { 1. } else { 0. },
         };
         if p.x + p.width > 1.00001 || p.y + p.height > 1.00001 {
             return Err("Local region is outside the image".into());
@@ -372,6 +383,26 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn maps_adjustment_scope_and_rejects_unknown_values() {
+        let mut value = serde_json::json!({
+            "style":"neutral", "processingResolution":100,
+            "contrast":0,"gamma":0,"vibrance":0,"brightness":0,"saturation":0,"hue":0,
+            "local":{"intensity":1.3,"tone":0.5,"structure":0.8,
+                "region":{"x":0.1,"y":0.2,"width":0.2,"height":0.3}}
+        });
+        let legacy: StudioState = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(legacy.params().unwrap().whole_image, 0.);
+        value["local"]["scope"] = "image".into();
+        let whole: StudioState = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(whole.params().unwrap().whole_image, 1.);
+        value["local"]["scope"] = "region".into();
+        let local: StudioState = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(local.params().unwrap().whole_image, 0.);
+        value["local"]["scope"] = "invalid".into();
+        assert!(serde_json::from_value::<StudioState>(value).is_err());
+        assert_eq!(std::mem::size_of::<Params>(), 56);
+    }
     #[test]
     fn export_names() {
         assert_eq!(filename("car:front", "neutral"), "car_front-neutral.png");

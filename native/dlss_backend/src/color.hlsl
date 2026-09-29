@@ -2,7 +2,7 @@ Texture2D<float4> source : register(t0);
 RWTexture2D<float4> output : register(u0);
 cbuffer Settings : register(b0) {
   float contrast, gamma, vibrance, brightness, saturation, hue, intensity, tone,
-      structure, rx, ry, rw, rh;
+      structure, rx, ry, rw, rh, whole_image;
   uint width, height;
 };
 float3 linearize(float3 v) {
@@ -37,12 +37,13 @@ float3 encode(float3 v) {
                      .114 + .886 * c - .203 * s),
             rgb);
   float2 uv = float2(p.xy) / float2(width, height);
-  if (all(uv >= float2(rx, ry)) && all(uv <= float2(rx + rw, ry + rh))) {
+  if (whole_image > .5 || (all(uv >= float2(rx, ry)) && all(uv <= float2(rx + rw, ry + rh)))) {
     float edge = min(min((uv.x - rx) / rw, (rx + rw - uv.x) / rw),
                      min((uv.y - ry) / rh, (ry + rh - uv.y) / rh));
     float3 a = linearize(source[uint2(p.x > 0 ? p.x - 1 : 0, p.y)].rgb),
            b = linearize(source[uint2(min(width - 1, p.x + 1), p.y)].rgb);
-    rgb += saturate(edge * 20) * intensity *
+    float mask = whole_image > .5 ? 1 : saturate(edge * 20);
+    rgb += mask * intensity *
            (tone * .1 +
             (structure - .8) * (linearize(original.rgb) - (a + b) / 2));
   }

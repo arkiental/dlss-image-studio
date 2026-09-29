@@ -47,6 +47,7 @@ describe("explicit application color processing", () => {
         20,
       ),
       s = defaults();
+    s.local.scope = "region";
     s.local.region = { x: 0.25, y: 0.25, width: 0.5, height: 0.5 };
     s.local.tone = 0.7;
     const baseline = processPixels(src, defaults()),
@@ -67,5 +68,50 @@ describe("explicit application color processing", () => {
         (x) => Number.isFinite(x) && x >= 0 && x <= 255,
       ),
     ).toBe(true);
+  });
+});
+
+describe("whole-image adjustment scope", () => {
+  it("tone affects every pixel including image edges and preserves alpha", () => {
+    const src = new ImageData(
+      new Uint8ClampedArray(20 * 20 * 4).fill(100),
+      20,
+      20,
+    );
+    const s = defaults();
+    s.local.tone = 0.7;
+    const out = processPixels(src, s);
+    for (let i = 0; i < out.data.length; i += 4) {
+      expect(out.data[i]).toBeGreaterThan(src.data[i]);
+      expect(out.data[i + 3]).toBe(src.data[i + 3]);
+    }
+  });
+  it("moving the zoom inspection does not move whole-image adjustments", () => {
+    const s = defaults();
+    s.local.tone = 0.5;
+    s.local.structure = 1.2;
+    const before = processPixels(fixture(), s);
+    s.local.region = { x: 0.6, y: 0.1, width: 0.2, height: 0.2 };
+    expect(processPixels(fixture(), s).data).toEqual(before.data);
+  });
+  it("intensity scales the effect and zero intensity restores neutral pixels", () => {
+    const src = fixture(),
+      s = defaults();
+    s.local.tone = 0.4;
+    s.local.intensity = 0;
+    expect(processPixels(src, s).data).toEqual(
+      processPixels(src, defaults()).data,
+    );
+    s.local.intensity = 0.5;
+    const low = processPixels(src, s);
+    s.local.intensity = 2.6;
+    expect(processPixels(src, s).data[0]).toBeGreaterThan(low.data[0]);
+  });
+  it("structure changes detail outside the zoom region", () => {
+    const s = defaults();
+    s.local.structure = 1.6;
+    expect(processPixels(fixture(), s).data).not.toEqual(
+      processPixels(fixture(), defaults()).data,
+    );
   });
 });

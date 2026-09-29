@@ -119,6 +119,8 @@ export default function App() {
     [settings, setSettings] = useState(false),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
+    [sourceRevision, setSourceRevision] = useState(0),
+    [completedPreview, setCompletedPreview] = useState({ key: "", url: "" }),
     [cap, setCap] = useState<Capability | null>(null),
     [stem, setStem] = useState("image");
   const canvas = useRef<HTMLCanvasElement>(null),
@@ -153,14 +155,20 @@ export default function App() {
     const generation = ++sourceGeneration.current;
     ++version.current;
     sourceReady.current = false;
+    source.current = null;
     setBusy(true);
     const image = new Image();
     image.onload = async () => {
+      if (generation !== sourceGeneration.current) return;
       const c = document.createElement("canvas");
       c.width = image.naturalWidth;
       c.height = image.naturalHeight;
-      if (c.width * c.height > 64_000_000) {
-        notify("Image exceeds the 64 megapixel memory limit.");
+      if (
+        c.width * c.height > 64_000_000 ||
+        c.width > 16384 ||
+        c.height > 16384
+      ) {
+        notify("Image exceeds the 64 megapixel or 16384-pixel side limit.");
         setBusy(false);
         return;
       }
@@ -180,13 +188,16 @@ export default function App() {
         if (generation !== sourceGeneration.current) return;
         source.current = c;
         sourceReady.current = true;
+        setSourceRevision(generation);
         setDimensions({ w: c.width, h: c.height });
       } catch (error) {
+        if (generation !== sourceGeneration.current) return;
         notify(String(error));
         setBusy(false);
       }
     };
     image.onerror = () => {
+      if (generation !== sourceGeneration.current) return;
       notify("Unable to decode this image. Try PNG, JPEG or WebP.");
       setBusy(false);
     };
@@ -240,12 +251,24 @@ export default function App() {
     worker.current.onmessage = ({ data }) => {
       if (data.id === version.current) {
         draw(data.image);
+        setCompletedPreview({ key: data.key, url: data.sourceUrl });
         setBusy(false);
       }
     };
     return () => worker.current?.terminate();
   }, []);
-  const processingKey = JSON.stringify({ ...state, zoom: undefined });
+  const processingKey = JSON.stringify({
+    ...state,
+    zoom: undefined,
+    local: {
+      ...state.local,
+      region: state.local.scope === "region" ? state.local.region : undefined,
+    },
+  });
+  const previewReady =
+    !busy &&
+    completedPreview.key === processingKey &&
+    completedPreview.url === url;
   useEffect(() => {
     const id = ++version.current;
     const timer = setTimeout(async () => {
@@ -262,11 +285,14 @@ export default function App() {
               source.current.height,
             ),
           );
+          setCompletedPreview({ key: processingKey, url });
           setBusy(false);
         } else {
           const c = source.current;
           worker.current?.postMessage({
             id,
+            key: processingKey,
+            sourceUrl: url,
             state,
             image: c.getContext("2d")!.getImageData(0, 0, c.width, c.height),
           });
@@ -279,8 +305,8 @@ export default function App() {
       }
     }, 65);
     return () => clearTimeout(timer);
-  }, [processingKey, dimensions]);
-  useEffect(drawZoom, [state.zoom, fit.width]);
+  }, [processingKey, sourceRevision]);
+  useEffect(drawZoom, [state.zoom, region, fit.width]);
   const loadFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       notify("Choose an image file.");
@@ -402,8 +428,8 @@ export default function App() {
     window.addEventListener("pointerup", end);
   }
   async function exportImage(kind: "file" | "clipboard" | "all") {
-    if (!sourceReady.current) {
-      notify("The source image is not ready for processing.");
+    if (!sourceReady.current || !previewReady) {
+      notify("Wait for the current image adjustments to finish processing.");
       return;
     }
     setBusy(true);
@@ -543,7 +569,11 @@ export default function App() {
                   )}
                 </svg>
                 <div
-                  aria-label="Local adjustment region"
+                  aria-label={
+                    state.local.scope === "region"
+                      ? "Local adjustment region"
+                      : "Zoom inspection region"
+                  }
                   role="slider"
                   tabIndex={0}
                   aria-valuetext={`${Math.round(region.x * 100)}, ${Math.round(region.y * 100)}`}
@@ -622,12 +652,33 @@ export default function App() {
           </section>
           <section className="local-panel">
             <div className="section-heading">
-              <h2>Local Adjustments</h2>
+              <h2>Image Adjustments</h2>
+              <div
+                className="scope-switch"
+                role="group"
+                aria-label="Adjustment area"
+              >
+                {(["image", "region"] as const).map((scope) => (
+                  <button
+                    key={scope}
+                    aria-pressed={state.local.scope === scope}
+                    onClick={() =>
+                      setState((s) => ({ ...s, local: { ...s.local, scope } }))
+                    }
+                  >
+                    {scope === "image" ? "Whole image" : "Selected area"}
+                  </button>
+                ))}
+              </div>
               <button
                 onClick={() =>
                   setState((s) => ({
                     ...s,
-                    local: { ...defaults().local, region: s.local.region },
+                    local: {
+                      ...defaults().local,
+                      scope: s.local.scope,
+                      region: s.local.region,
+                    },
                   }))
                 }
               >
@@ -635,11 +686,17 @@ export default function App() {
                 Reset
               </button>
             </div>
+            <p className="adjustment-hint">
+              {state.local.scope === "image"
+                ? "Applies to the whole image. Dashed box: zoom inspection only."
+                : "Applies inside the dashed box. Drag it to choose the area."}{" "}
+              Intensity scales tone and structure.
+            </p>
             <div className="local-controls">
               {(["intensity", "tone", "structure"] as const).map((key, i) => (
                 <Slider
                   key={key}
-                  label={["Intensity", "Local tone", "Local structure"][i]}
+                  label={["Intensity", "Tone", "Structure"][i]}
                   value={state.local[key]}
                   min={key === "tone" ? -1 : 0}
                   max={key === "intensity" ? 2.6 : key === "tone" ? 1 : 1.6}
@@ -739,17 +796,26 @@ export default function App() {
           <section className="export">
             <h2>Export</h2>
             <div className="export-buttons">
-              <button disabled={busy} onClick={() => exportImage("clipboard")}>
+              <button
+                disabled={!previewReady}
+                onClick={() => exportImage("clipboard")}
+              >
                 <Clipboard />
                 Copy to
                 <br />
                 Clipboard
               </button>
-              <button disabled={busy} onClick={() => exportImage("file")}>
+              <button
+                disabled={!previewReady}
+                onClick={() => exportImage("file")}
+              >
                 <Download />
                 Export to File
               </button>
-              <button disabled={busy} onClick={() => exportImage("all")}>
+              <button
+                disabled={!previewReady}
+                onClick={() => exportImage("all")}
+              >
                 <Layers />
                 Export All
                 <br />
@@ -834,8 +900,11 @@ export default function App() {
             </p>
             <p>
               Ctrl+O opens an image. Paste or drop an image to load it. Drag the
-              dashed region to adjust locally. Drag the zoom header, scroll to
-              magnify, or press Z to restore the zoom panel.
+              dashed box to inspect another area. Choose Selected area to limit
+              tone and structure to that box, or Whole image to edit everywhere.
+              Intensity scales their effect; neutral tone and structure remain
+              unchanged. Drag the zoom header, scroll to magnify, or press Z to
+              restore the zoom panel.
             </p>
             <p>
               Exports retain source dimensions. Inputs are decoded as sRGB;
