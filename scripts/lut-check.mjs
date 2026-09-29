@@ -15,7 +15,8 @@ page.on("pageerror", (e) => errors.push(e.message));
 await page.goto("http://127.0.0.1:1420/?demo=1");
 const ready = async () => {
   await expect(page.getByText("Loading LUT�", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".studio-status")).toContainText("Ready");
+  // Hosted Windows runners use the CPU browser fallback, including after reload.
+  await expect(page.locator(".studio-status")).toContainText("Ready", { timeout: 30000 });
 };
 await ready();
 await page.getByRole("checkbox", { name: "Show zoom inspector" }).uncheck();
