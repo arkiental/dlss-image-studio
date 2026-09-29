@@ -14,7 +14,19 @@ await page.waitForFunction(() =>
   document.querySelector(".studio-status")?.textContent?.includes("Ready"),
 );
 await page.getByRole("checkbox", { name: "Show zoom inspector" }).uncheck();
+await page
+  .getByRole("button", { name: "Create snapshot", exact: true })
+  .first()
+  .click();
+await expect(page.locator(".classic-color-grid .classic-control")).toHaveCount(
+  6,
+);
+const neuralBounds = await page.locator(".neural-adjustments").boundingBox();
+const snapshotBounds = await page.locator(".variant-shelf").boundingBox();
+if (snapshotBounds.y < neuralBounds.y + neuralBounds.height)
+  throw Error("Snapshots no longer sit below neural adjustments");
 await page.screenshot({ path: "docs/screenshots/studio-professional.png" });
+await page.getByRole("button", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1");
 await page.waitForFunction(() =>
@@ -23,6 +35,17 @@ await page.waitForFunction(() =>
 await page.getByLabel("Before/After mode").selectOption("vertical");
 await page.screenshot({ path: "docs/screenshots/studio-comparison.png" });
 await page.setViewportSize({ width: 1080, height: 840 });
+await page.getByRole("button", { name: "Adjust", exact: true }).click();
+const panelBounds = await page.locator(".inspector-content").boundingBox();
+const lastCardBounds = await page
+  .locator(".classic-color-grid .classic-control")
+  .last()
+  .boundingBox();
+if (
+  lastCardBounds.y + lastCardBounds.height >
+  panelBounds.y + panelBounds.height
+)
+  throw Error("Compact layout clips the color slider cards");
 await page.screenshot({ path: "docs/screenshots/studio-compact.png" });
 await page.setViewportSize({ width: 1536, height: 1024 });
 await page.getByLabel("Before/After mode").selectOption("processed");
@@ -38,8 +61,9 @@ await page.getByRole("button", { name: "Effects", exact: true }).click();
 await page.getByRole("slider", { name: "Vignette", exact: true }).fill("12");
 await page
   .getByRole("button", { name: "Create snapshot", exact: true })
+  .first()
   .click();
-await expect(page.locator(".variant-strip .variant")).toHaveCount(1);
+await expect(page.locator(".variant-strip .variant")).toHaveCount(2);
 await page.getByRole("button", { name: "Export", exact: true }).first().click();
 await expect(page.getByLabel("Output size")).toHaveValue("original");
 await page.getByLabel("Output format").selectOption("exr");

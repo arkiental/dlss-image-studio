@@ -134,8 +134,10 @@ await tone.fill("2");
 await expect(page.getByRole("alert")).toContainText(
   "Neural runtime unavailable",
 );
-await expect(page.locator(".inspector-footer button.primary")).toBeDisabled();
-await page.getByRole("button", { name: "Reset Local", exact: true }).click();
+await expect(page.locator(".classic-export button").nth(1)).toBeDisabled();
+await page
+  .getByRole("button", { name: "Reset neural adjustments", exact: true })
+  .click();
 await ready();
 if ((await red()) !== 100) throw Error("Failed operation did not recover");
 await page.getByRole("button", { name: "Dismiss", exact: true }).click();
@@ -156,7 +158,14 @@ for (const name of ["Local tone", "Resolution"]) {
 await ready();
 await page.waitForTimeout(250);
 const interactiveRequests = await page.evaluate(() => window.requests);
-if(!interactiveRequests.some(r=>r.max===640) || interactiveRequests.at(-1).max!==0)throw Error('Interactive preview did not refine to full resolution on release');
+if (
+  !interactiveRequests.some((r) => r.max === 640) ||
+  interactiveRequests.at(-1).max !== 0
+)
+  throw Error(
+    "Interactive preview did not refine to full resolution on release",
+  );
+await page.getByRole("button", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 const exposure = page.getByRole("slider", { name: "Exposure", exact: true });
 await exposure.fill("1");
@@ -229,6 +238,7 @@ await ready();
 await page.waitForTimeout(250);
 await page
   .getByRole("button", { name: "Create snapshot", exact: true })
+  .first()
   .click();
 await page.getByRole("button", { name: "Save Project", exact: true }).click();
 const saved = await page.evaluate(() => window.saved);
@@ -250,7 +260,7 @@ if (
 await page.evaluate(() => window.dialogPaths.push("D:/tests/session.dlssproj"));
 await page.getByRole("button", { name: "Open Project", exact: true }).click();
 await ready();
-await page.getByRole("button", { name: "Adjust", exact: true }).last().click();
+await page.getByRole("button", { name: "Refine", exact: true }).last().click();
 if (
   (await page
     .getByRole("button", { name: "Tone", exact: true })
@@ -264,7 +274,7 @@ await expect(
 await page.getByRole("button", { name: "Batch", exact: true }).click();
 await page.evaluate(() => window.dialogPaths.push(["D:/a.png", "D:/b.png"]));
 await page.getByRole("button", { name: "Add renders", exact: true }).click();
-await page.getByRole("button", { name: "Viewer", exact: true }).click();
+await page.getByRole("button", { name: "Adjust", exact: true }).click();
 await page.getByRole("button", { name: "Batch", exact: true }).click();
 await expect(page.locator(".batch-list>div")).toHaveCount(2);
 await page.evaluate(() => window.dialogPaths.push("D:/outputs"));
@@ -272,7 +282,7 @@ await page
   .getByRole("button", { name: "Choose output folder", exact: true })
   .click();
 await page.getByRole("button", { name: "Process all", exact: true }).click();
-await page.getByRole("button", { name: "Viewer", exact: true }).click();
+await page.getByRole("button", { name: "Adjust", exact: true }).click();
 await page.waitForTimeout(250);
 await page.getByRole("button", { name: "Batch", exact: true }).click();
 await expect(page.getByText("2 / 2 complete")).toBeVisible();
@@ -280,6 +290,7 @@ await page.getByRole("button", { name: "Export", exact: true }).first().click();
 await ready();
 await page
   .getByRole("button", { name: "Copy to Clipboard", exact: true })
+  .last()
   .click();
 expect(await page.evaluate(() => window.exports.length)).toBe(1);
 await browser.close();

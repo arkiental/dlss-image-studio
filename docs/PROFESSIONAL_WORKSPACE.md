@@ -4,7 +4,7 @@ Version 0.2 implements a working core for the requested render-finishing workflo
 
 | Area | Working in this build | Boundaries / outstanding work |
 | --- | --- | --- |
-| Workspace | Rail, large viewport, contextual tabs, remembered collapsible groups, bottom presets/history/snapshots, empty state and recent projects | No arbitrary panel docking layout |
+| Workspace | Original two-column studio layout, large viewport, six colored slider cards, neural adjustments below the image, compact workspace navigation, contextual tabs, remembered collapsible groups, bottom presets/history/snapshots, empty state and recent projects | No arbitrary panel docking layout |
 | Inspection | Wheel/slider/numeric zoom, 25/50/100/200%, Fit/Fill, pan, before/after toggle and hold, movable vertical/horizontal divider, labels, floating 1–10× inspector, high-zoom grid, presentation and fullscreen | Inspector stays inside the app window; it can leave the image frame |
 | Neural enhancement | Verified external D3D12/NGX runtime, three styles, intensity/tone/structure, 1–100% evaluation size, cached output, explicit failure | Provider accepts display-referred RGBA8. It does not establish a guarantee against all neural changes to logos or geometry. Compare before/after. No claim about unreleased SDK documentation |
 | Enhance | Separate luminance/chroma smoothing with edge protection, radius/threshold sharpening, high-frequency micro detail | No dedicated compression-artifact classifier or super-resolution output mode |
@@ -26,6 +26,10 @@ Version 0.2 implements a working core for the requested render-finishing workflo
 | Export | Clipboard, file, all variants/presets; original/percent/exact dimensions, nearest/bicubic/Lanczos, PNG8/16, TIFF8/16, EXR half/float, JPEG quality, lossless WebP8, ICC profiles and EXR primaries | Files are never overwritten. Metadata is stripped. WebP quality is lossless only; clipboard is 8-bit sRGB. No DLSS/SR resize mode |
 | Projects | Versioned .dlssproj, source/pass paths, explicit input interpretation, masks, adjustments, presets, snapshots, history/cursor and export configuration; Save/Save As/recent, previous-save backup | Media is referenced by absolute paths, not embedded. Pasted images must first be opened from a disk file to save a project. No autosave/relink UI |
 | Performance | Async native work, persistent neural provider, byte-pipe transfers, latest-request rejection, cached neural frame for grading, reduced conventional preview during dragging, full-size refinement, background thumbnails | Conventional float finishing runs on CPU/Rayon. Neural setting changes still require real provider evaluation at the chosen Resolution; reduced preview is not a claim of 60 FPS neural processing |
+
+## Control layout
+
+Adjust keeps the original neural styles, Resolution slider and six color controls. Refine exposes Enhance, Tone, Color and Local groups; Effects, Tools and Export retain the expanded finishing workflows. Masks, Passes, Presets and Batch live in the compact sidebar navigation. Neural intensity/tone/structure stay directly beneath the viewport, and the snapshots/presets/history shelf remains at the bottom.
 
 ## Processing architecture
 

@@ -143,7 +143,7 @@ export function useStudio() {
     const down = (e: PointerEvent) => {
       if (
         (e.target as HTMLElement)?.closest(
-          ".pro-inspector input[type=range],.pro-inspector input[type=number],.color-wheel,.curve-editor,.preset-strength input",
+          ".neural-adjustments input[type=range],.neural-adjustments input[type=number],.pro-inspector input[type=range],.pro-inspector input[type=number],.color-wheel,.curve-editor,.preset-strength input",
         )
       )
         setDragging(true);

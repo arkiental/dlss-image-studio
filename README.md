@@ -6,7 +6,7 @@ A focused Windows render-finishing application: open a render, enhance, refine, 
 
 ## Version 0.2
 
-- A large viewport, navigation rail, contextual tabs, two expanded adjustment groups at a time, and a presets/snapshots/history shelf.
+- The original two-column studio appearance: large viewport, colored slider cards, neural adjustments below the image, contextual advanced tabs, and snapshots/presets/history along the bottom.
 - Wheel zoom, numerical zoom, Fit/Fill, pan, vertical/horizontal before-after splits, temporary original view, a floating 1–10× inspector, pixel grid, presentation mode and fullscreen.
 - Existing **real neural rendering** and neural styles, intensity, tone, structure and evaluation resolution. Conventional processing stays separate.
 - Scene-linear float finishing: exposure and tonal ranges, RGB/channel curves, white balance, three-way grading, denoise, sharpening, clarity, texture and broad local contrast.

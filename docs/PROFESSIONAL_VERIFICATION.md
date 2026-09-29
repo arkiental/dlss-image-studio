@@ -72,3 +72,9 @@ The external neural interface accepts display-referred 8-bit pixels. It is disab
 Cryptomatte decoding, OCIO/ACES display/AgX/Filmic transforms, optical bokeh, independent adjustment stacks per mask, advanced lens models and other items listed in the limits matrix remain unfinished. They are not presented as working controls. The app's EXR support covers flat layers/channels, not deep or offset-data-window EXRs. Source metadata round-trip is not implemented.
 
 GitHub's Windows workflow runs unit, interaction and build checks and produces installer/executable artifacts. Hosted build success is not GPU verification; the physical RTX results above are separate.
+
+## Original studio appearance restored
+
+The quick Adjust view again uses the original two-column layout, serif headings, colored slider cards, gold thumbs/ticks, and export tiles. Neural controls remain beneath the viewport; snapshots/history/presets remain at the bottom. Advanced tools remain available through Refine, Effects, Tools, Export, and compact workspace navigation.
+
+Browser checks pass at 1536×1024 and 1080×840, including an assertion that all six quick-adjust cards fit inside the compact sidebar. Synthetic transport checks cover held drags and full-size refinement after release from the relocated neural controls, latest-frame rejection, inspector matching, mappings, runtime failure/recovery, undo/redo, zoom/pan/split, source reload, project persistence, batch and export readiness. All 25 frontend tests pass. These interaction tests are not new GPU quality or performance evidence.

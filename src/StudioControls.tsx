@@ -14,6 +14,9 @@ export function Control({
   reset = 0,
   tip,
   disabled = false,
+  icon,
+  accent = "var(--gold)",
+  card = false,
 }: {
   label: string;
   value: number;
@@ -24,19 +27,25 @@ export function Control({
   reset?: number;
   tip?: string;
   disabled?: boolean;
+  icon?: React.ReactNode;
+  accent?: string;
+  card?: boolean;
 }) {
   const numericDrag = useRef<{ x: number; value: number } | null>(null);
   return (
     <div
-      className="pro-control"
+      className={`pro-control ${card ? "classic-control" : ""}`}
       title={tip || label}
-      onDoubleClick={() => onChange(reset)}
+      onDoubleClick={() => !disabled && onChange(reset)}
       onContextMenu={(e) => {
         e.preventDefault();
-        onChange(reset);
+        if (!disabled) onChange(reset);
       }}
     >
-      <label>{label}</label>
+      <label>
+        {icon}
+        {label}
+      </label>
       <div className="slider-wrap">
         <RangeInput
           label={label}
@@ -49,10 +58,11 @@ export function Control({
           style={
             {
               "--fill": `${((value - min) / (max - min)) * 100}%`,
-              "--accent": "var(--gold)",
+              "--accent": accent,
             } as CSSProperties
           }
         />
+        <div className="ticks" aria-hidden="true" />
       </div>
       <input
         aria-label={`${label} value`}

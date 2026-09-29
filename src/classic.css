@@ -1,0 +1,455 @@
+/* The original studio instrument styling, shared by quick and advanced tools. */
+.studio {
+  font-size: 14px;
+  background: #111212;
+}
+.studio .titlebar {
+  height: 63px;
+  padding-left: 30px;
+  border: 0;
+}
+.studio .titlebar h1 {
+  font-size: 34px;
+}
+.studio button {
+  font-size: 13px;
+  border-radius: 7px;
+}
+.studio input,
+.studio select {
+  background-color: #121313;
+  border-color: #45443d;
+}
+.pro-workspace {
+  grid-template-columns: minmax(0, 1fr) 457px;
+  padding: 0 15px 8px;
+  gap: 12px;
+}
+.view-panel,
+.pro-inspector,
+.variant-shelf,
+.neural-adjustments {
+  background: #151616;
+  border-color: #45443d;
+  border-radius: 10px;
+}
+.center-workspace {
+  gap: 12px;
+}
+.studio .viewport {
+  background: #151616;
+}
+.view-panel {
+  padding: 8px;
+}
+.pro-view-toolbar,
+.detail-toolbar {
+  background: #181918;
+  border-color: #45443d;
+}
+.pro-view-toolbar {
+  border: 1px solid #45443d;
+  border-radius: 7px;
+  height: 57px;
+  margin: 0 3px 8px;
+}
+.detail-toolbar {
+  border: 0;
+  height: 39px;
+  padding: 0 10px;
+}
+.studio .view-label {
+  color: #f3d59d;
+}
+.pro-inspector .nav-rail {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #35362f;
+}
+.nav-rail button {
+  flex-direction: row;
+  flex: 1;
+  min-height: 34px;
+  font-size: 11px;
+  padding: 5px;
+  gap: 5px;
+}
+.nav-rail button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nav-rail .rail-spacer {
+  display: none;
+}
+.nav-rail button:nth-last-child(-n + 2) {
+  flex: 0 0 28px;
+}
+.nav-rail button:nth-last-child(-n + 2) svg {
+  width: 15px;
+}
+.inspector-tabs {
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 12px;
+  border-color: #35362f;
+}
+.inspector-tabs button {
+  padding: 8px 2px;
+}
+.inspector-content {
+  padding: 18px 10px;
+  scrollbar-color: #5d584c transparent;
+}
+.neural-styles {
+  gap: 11px;
+  margin: 0 12px 20px;
+}
+.neural-styles button {
+  height: 54px;
+  font-size: 16px;
+}
+.studio button.active {
+  background: #342f25;
+  border-color: #d8b273;
+  color: #f5efdf;
+  box-shadow: inset 0 0 0 1px #756449;
+}
+.classic-resolution {
+  margin: 0 13px 24px;
+  border-top: 1px solid #35352e;
+  padding-top: 16px;
+}
+.classic-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.classic-color-grid > div {
+  min-width: 0;
+}
+.studio .classic-control {
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 4px 8px;
+  padding: 12px 16px 15px;
+  border: 1px solid #393a33;
+  border-radius: 10px;
+  background: #141515;
+  min-height: 109px;
+}
+.classic-control label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.classic-control label svg {
+  flex-shrink: 0;
+  color: #ffedc8;
+}
+.studio .classic-control input[type="number"] {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  height: 33px;
+  font-size: 16px;
+}
+.classic-control .slider-wrap {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.studio .slider-wrap input[type="range"] {
+  border: 0;
+  padding: 0;
+  height: 6px;
+}
+.studio .slider-wrap input[type="range"]::-webkit-slider-thumb {
+  width: 21px;
+  height: 21px;
+}
+.studio .pro-control input[type="range"] {
+  margin: 12px 0 16px;
+}
+.pro-control .ticks {
+  height: 9px;
+}
+.hue-control input[type="range"] {
+  background: linear-gradient(
+    to right,
+    #ee00ee,
+    #ff2244,
+    #ffed00,
+    #1beeaa,
+    #0088ff,
+    #ee00ee
+  ) !important;
+}
+.classic-resolution .classic-control {
+  padding: 0;
+  border: 0;
+  background: none;
+  grid-template-columns: minmax(0, 1fr) 66px;
+  gap: 8px 22px;
+  min-height: 78px;
+}
+.classic-resolution .classic-control label {
+  font:
+    24px Georgia,
+    serif;
+  grid-column: 1/-1;
+}
+.classic-resolution .classic-control input[type="number"] {
+  grid-row: 2;
+  align-self: start;
+}
+.classic-resolution .slider-wrap {
+  grid-column: 1;
+}
+.range-endpoints {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1px;
+  font-size: 14px;
+}
+.neural-adjustments {
+  flex-shrink: 0;
+  border: 1px solid #45443d;
+  padding: 17px 25px 19px;
+}
+.neural-adjustments header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 11px;
+  border-bottom: 1px solid #82714f;
+  margin-bottom: 10px;
+}
+.neural-adjustments h2 {
+  font-size: 26px;
+  margin-right: auto;
+  white-space: nowrap;
+}
+.neural-enable {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+.neural-adjustments .scope-switch {
+  display: flex;
+}
+.neural-adjustments .scope-switch button {
+  font-size: 12px;
+  padding: 7px;
+}
+.neural-reset {
+  border: 0;
+  background: transparent;
+}
+.neural-control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.studio .neural-control-grid .classic-control {
+  border: 0;
+  border-right: 1px solid #36362f;
+  border-radius: 0;
+  padding: 0 24px;
+  background: transparent;
+  min-height: 80px;
+  grid-template-columns: minmax(0, 1fr) 65px;
+}
+.studio .neural-control-grid .classic-control:first-child {
+  padding-left: 3px;
+}
+.studio .neural-control-grid .classic-control:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+.classic-export {
+  border-top: 1px solid #45443d;
+  padding: 12px 8px 20px;
+}
+.classic-export h2 {
+  font-size: 29px;
+  margin: 0 15px 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+}
+.classic-export h2::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #45443d;
+}
+.classic-export > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.classic-export button {
+  flex-direction: column;
+  height: 126px;
+  font-size: 15px;
+  gap: 18px;
+  line-height: 1.55;
+}
+.pro-group {
+  border-color: #393a33;
+  border-radius: 8px;
+}
+.pro-group > header {
+  background: #191a19;
+  border-left: 0;
+}
+.pro-group > header > button:first-child {
+  font:
+    23px Georgia,
+    serif;
+}
+.pro-control {
+  grid-template-columns: 110px minmax(45px, 1fr) 52px;
+  min-height: 60px;
+  font-size: 14px;
+  border-color: #30312c;
+}
+.group-content {
+  padding: 8px 15px 15px;
+}
+.studio summary,
+.studio .check-row {
+  font-size: 13px;
+}
+.variant-shelf {
+  min-height: 120px;
+  max-height: 155px;
+  flex-shrink: 0;
+}
+.shelf-toolbar {
+  border-color: #35362f;
+}
+.shelf-actions input {
+  width: 115px;
+}
+.shelf-actions button {
+  font-size: 11px;
+}
+.variant span {
+  font-size: 12px;
+}
+.studio-status {
+  background: #111212;
+  border-color: #35362f;
+}
+.presentation .neural-adjustments {
+  display: none;
+}
+@media (max-width: 1250px) {
+  .pro-workspace {
+    grid-template-columns: minmax(0, 1fr) 370px;
+    gap: 10px;
+    padding: 0 10px 6px;
+  }
+  .classic-control label {
+    font-size: 13px;
+    gap: 7px;
+  }
+  .classic-control label svg {
+    width: 23px;
+  }
+  .studio .classic-control {
+    padding: 10px;
+  }
+  .neural-adjustments {
+    padding: 12px;
+  }
+  .neural-adjustments header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .neural-adjustments h2 {
+    font-size: 23px;
+  }
+  .studio .neural-control-grid .classic-control {
+    padding: 0 10px;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 6px 2px;
+  }
+  .neural-control-grid label {
+    gap: 5px;
+    font-size: 12px;
+  }
+  .neural-control-grid label svg {
+    width: 21px;
+  }
+  .shelf-actions input {
+    width: 85px;
+  }
+  .shelf-toolbar {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .classic-export button {
+    height: 110px;
+    font-size: 13px;
+  }
+  .pro-view-toolbar {
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .pro-view-toolbar .slider-wrap {
+    min-width: 35px;
+  }
+}
+@media (max-height: 900px) {
+  .classic-export {
+    padding: 8px 8px 12px;
+  }
+  .classic-export h2 {
+    margin-bottom: 8px;
+  }
+  .classic-export button {
+    height: 90px;
+    gap: 10px;
+  }
+  .inspector-content {
+    padding: 12px 10px;
+  }
+  .neural-styles {
+    margin-bottom: 12px;
+  }
+  .neural-styles button {
+    height: 44px;
+  }
+  .classic-resolution {
+    padding-top: 10px;
+    margin-bottom: 14px;
+  }
+  .studio .classic-resolution .classic-control {
+    padding: 0;
+    min-height: 62px;
+    gap: 4px 18px;
+  }
+  .classic-color-grid {
+    gap: 8px;
+  }
+  .studio .classic-color-grid .classic-control {
+    min-height: 84px;
+    padding: 8px 10px;
+  }
+  .classic-color-grid .classic-control label {
+    font-size: 13px;
+  }
+  .classic-color-grid .classic-control label svg {
+    width: 23px;
+  }
+  .studio .classic-color-grid input[type="range"] {
+    margin: 10px 0 12px;
+  }
+  .classic-color-grid .ticks {
+    height: 6px;
+  }
+}

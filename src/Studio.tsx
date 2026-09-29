@@ -10,8 +10,6 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
-  Home,
-  SlidersHorizontal,
   Brush,
   Layers,
   Bookmark,
@@ -27,13 +25,12 @@ import {
   Redo2,
   FolderOpen,
   Save,
-  Download,
-  Camera,
   BarChart3,
   RotateCcw,
   Maximize2,
   Aperture,
 } from "lucide-react";
+import { NeuralAdjustments, QuickExport } from "./StudioClassic";
 import { RangeInput } from "./RangeInput";
 import { Scopes } from "./Scopes";
 import { Panels, SettingsPanel, Variants } from "./StudioPanels";
@@ -41,22 +38,16 @@ import { useStudio, unpack } from "./useStudio";
 import { defaults, clamp } from "./state";
 import type { Finish, MaskLayer } from "./finish";
 import "./studio.css";
-const titles = [
-  "Viewer",
-  "Adjust",
-  "Masks",
-  "Render Passes",
-  "Presets",
-  "Batch",
-];
-const navIcons = [Home, SlidersHorizontal, Brush, Layers, Bookmark, Images];
+import "./classic.css";
+const titles = ["Masks", "Render Passes", "Presets", "Batch"];
+const navIcons = [Brush, Layers, Bookmark, Images];
 export default function Studio() {
   const d = useStudio(),
     s = d.state,
     a = s.finish;
   const [workspace, setWorkspace] = useState("Adjust"),
     [tab, setTab] = useState("Adjust"),
-    [bottom, setBottom] = useState("Presets"),
+    [bottom, setBottom] = useState("Snapshots"),
     [settings, setSettings] = useState(false),
     [compare, setCompare] = useState("processed"),
     [holdOriginal, setHoldOriginal] = useState(false),
@@ -735,41 +726,6 @@ export default function Studio() {
         </section>
       ) : (
         <div className="pro-workspace">
-          <nav className="nav-rail">
-            {titles.map((name, i) => {
-              const Icon = navIcons[i];
-              return (
-                <button
-                  key={name}
-                  className={workspace === name ? "active" : ""}
-                  title={name}
-                  onClick={() => {
-                    setWorkspace(name);
-                    if (name === "Adjust") setTab("Adjust");
-                    if (name === "Presets") setBottom("Presets");
-                  }}
-                >
-                  <Icon size={21} />
-                  <span>{name === "Render Passes" ? "Passes" : name}</span>
-                </button>
-              );
-            })}
-            <div className="rail-spacer" />
-            <button
-              title="Undo · Ctrl+Z"
-              disabled={d.cursor < 0}
-              onClick={d.undo}
-            >
-              <Undo2 size={19} />
-            </button>
-            <button
-              title="Redo · Ctrl+Shift+Z"
-              disabled={d.cursor >= d.history.length - 1}
-              onClick={d.redo}
-            >
-              <Redo2 size={19} />
-            </button>
-          </nav>
           <div className="center-workspace">
             <section className="view-panel">
               <div className="pro-view-toolbar">
@@ -1059,14 +1015,56 @@ export default function Studio() {
                 </div>
               )}
             </section>
+            <NeuralAdjustments
+              d={d}
+              onMasks={() => setWorkspace("Masks")}
+              setSelectedMask={setSelectedMask}
+            />
             <Variants d={d} bottom={bottom} setBottom={setBottom} />
           </div>
           <aside className="pro-inspector">
+            <nav className="nav-rail">
+              {titles.map((name, i) => {
+                const Icon = navIcons[i];
+                return (
+                  <button
+                    key={name}
+                    className={workspace === name ? "active" : ""}
+                    title={name}
+                    onClick={() => {
+                      setWorkspace(name);
+                      if (name === "Presets") setBottom("Presets");
+                    }}
+                  >
+                    <Icon size={21} />
+                    <span>{name === "Render Passes" ? "Passes" : name}</span>
+                  </button>
+                );
+              })}
+              <div className="rail-spacer" />
+              <button
+                title="Undo · Ctrl+Z"
+                disabled={d.cursor < 0}
+                onClick={d.undo}
+              >
+                <Undo2 size={19} />
+              </button>
+              <button
+                title="Redo · Ctrl+Shift+Z"
+                disabled={d.cursor >= d.history.length - 1}
+                onClick={d.redo}
+              >
+                <Redo2 size={19} />
+              </button>
+            </nav>
+
             <div className="inspector-tabs">
-              {["Adjust", "Effects", "Tools", "Export"].map((n) => (
+              {["Adjust", "Refine", "Effects", "Tools", "Export"].map((n) => (
                 <button
                   key={n}
-                  className={tab === n ? "active" : ""}
+                  className={
+                    workspace === "Adjust" && tab === n ? "active" : ""
+                  }
                   onClick={() => {
                     setTab(n);
                     setWorkspace("Adjust");
@@ -1093,35 +1091,7 @@ export default function Studio() {
                 setErase={setErase}
               />
             </div>
-            <div className="inspector-footer">
-              <button
-                className="primary"
-                disabled={!d.ready || d.busy}
-                onClick={() => {
-                  setWorkspace("Adjust");
-                  setTab("Export");
-                }}
-              >
-                <Download size={17} />
-                Export
-              </button>
-              <button
-                title="Save snapshot"
-                onClick={() => {
-                  d.setSnapshots((v) => [
-                    ...v,
-                    {
-                      id: crypto.randomUUID(),
-                      name: `Snapshot ${v.length + 1}`,
-                      state: structuredClone(s),
-                    },
-                  ]);
-                  setBottom("Snapshots");
-                }}
-              >
-                <Camera size={18} />
-              </button>
-            </div>
+            <QuickExport d={d} />
           </aside>
         </div>
       )}

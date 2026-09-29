@@ -15,6 +15,7 @@ import {
   History,
   Plus,
 } from "lucide-react";
+import { QuickLook } from "./StudioClassic";
 import { Control, Group, CurveEditor, ColorWheel } from "./StudioControls";
 import { useStudio, imageUrl } from "./useStudio";
 import { defaults, type StudioState } from "./state";
@@ -798,23 +799,10 @@ export function Panels({
         />
       </>
     );
-  if (tab === "Adjust")
+  if (tab === "Adjust") return <QuickLook d={d} />;
+  if (tab === "Refine")
     return (
       <>
-        <div className="neural-styles">
-          {(["Cinematic", "Default", "Natural"] as const).map((v) => (
-            <button
-              key={v}
-              className={s.neural.style === v ? "active" : ""}
-              disabled={!s.neural.enabled}
-              onClick={() =>
-                d.setState((s) => ({ ...s, neural: { ...s.neural, style: v } }))
-              }
-            >
-              {v === "Default" ? "Neutral" : v}
-            </button>
-          ))}
-        </div>
         <Group
           name="Enhance"
           initial
@@ -832,23 +820,6 @@ export function Panels({
             }))
           }
         >
-          <label className="check-row">
-            <input
-              aria-label="Enable neural rendering"
-              type="checkbox"
-              checked={s.neural.enabled}
-              disabled={
-                !isTauri() || !!d.info?.hdr || (d.info?.bitDepth || 8) > 8
-              }
-              onChange={(e) =>
-                d.setState((s) => ({
-                  ...s,
-                  neural: { ...s.neural, enabled: e.target.checked },
-                }))
-              }
-            />
-            Neural rendering
-          </label>
           <Control
             label="DLSS Detail"
             value={s.local.intensity * 50}
@@ -863,18 +834,6 @@ export function Panels({
               }))
             }
             tip="Maps 0–100 to runtime intensity 0–2. Compare output to preserve your render identity."
-          />
-          <Control
-            label="Resolution"
-            value={s.processingResolution}
-            min={1}
-            max={100}
-            reset={100}
-            disabled={!s.neural.enabled}
-            onChange={(v) =>
-              d.setState((s) => ({ ...s, processingResolution: v }))
-            }
-            tip="Neural evaluation size. Output keeps its original dimensions."
           />
           {control(
             "denoise",
@@ -997,49 +956,6 @@ export function Panels({
             }))
           }
         >
-          <div className="scope-switch">
-            <button
-              className={!a.masked ? "active" : ""}
-              onClick={() =>
-                d.setState((s) => ({
-                  ...s,
-                  local: { ...s.local, scope: "image" },
-                  finish: { ...s.finish, masked: false },
-                }))
-              }
-            >
-              Whole image
-            </button>
-            <button
-              className={a.masked ? "active" : ""}
-              onClick={() => {
-                setWorkspace("Masks");
-                if (!a.masks.length) {
-                  const m = newMask("rectangle");
-                  patch({ masks: [m], masked: true });
-                  setSelectedMask(m.id);
-                } else patch({ masked: true });
-              }}
-            >
-              Selected area / Mask
-            </button>
-          </div>
-          {(["intensity", "tone", "structure"] as const).map((k, i) => (
-            <Control
-              key={k}
-              label={["Intensity", "Local tone", "Local structure"][i]}
-              value={s.local[k]}
-              min={0}
-              max={2}
-              step={0.01}
-              reset={1}
-              disabled={!s.neural.enabled}
-              onChange={(v) =>
-                d.setState((s) => ({ ...s, local: { ...s.local, [k]: v } }))
-              }
-              tip="Neural provider parameter. Separate from conventional Clarity and Texture; 1 is the default."
-            />
-          ))}
           {control(
             "clarity",
             "Clarity",
