@@ -9,7 +9,7 @@ Verified on 29 September 2026 on Windows with an NVIDIA GeForce RTX 4090, driver
 | Check | Result | What it establishes |
 | --- | --- | --- |
 | Frontend unit suite | 25 passed | Neutral identity, immutable sources, masks, crop/rotation, curves, partial presets, project state, and existing adjustment behavior |
-| Standard native suite | 22 passed | Float/HDR identity, alpha, half/float multilayer EXR, 16-bit precision, tagged output color round trips, extended-gamut P3 and float-TIFF ICC preservation, mask rasterization, project validation/backups, unsupported inputs and output overwrite refusal |
+| Standard native suite | 23 passed | Float/HDR identity, alpha, half/float multilayer EXR, half-overflow rejection, 16-bit precision, tagged output color round trips, extended-gamut P3 and float-TIFF ICC preservation, mask rasterization, project validation/backups, unsupported inputs and output overwrite refusal |
 | Local ignored GPU suite | 2 passed | Actual provider evaluation on the RTX 4090, neural parameter/style effects, cached export agreement, source reloads, region composition and original dimensions |
 | Preview transport script | Passed | Latest-result ordering, failure/recovery, matching inspector, held sliders, fine keyboard adjustment, undo/redo, split/pan/zoom, reduced drag preview and full-size refinement, project flow, batch persistence and export readiness |
 | Workspace browser script | Passed | Real conventional browser processing, masks, comparison, snapshots, format defaults; no JavaScript errors or horizontal overflow at 1536×1024 and 1080×840 |
@@ -67,7 +67,7 @@ Windows file-dialog editing through the automation helper had a stale-element li
 
 ## Explicit boundaries
 
-The external neural interface accepts display-referred 8-bit pixels. It is disabled for HDR/high-bit-depth sources; the app does not silently quantize them. Float finishing and export retain their source precision and finite HDR range. Clipboard and the screen preview are display-referred 8-bit copies.
+The external neural interface accepts display-referred 8-bit pixels. It is disabled for HDR/high-bit-depth sources; the app does not silently quantize them. Float finishing and export retain their source precision and finite HDR range. Half-float export rejects values beyond ±65504 and directs the user to 32-bit EXR. Clipboard and the screen preview are display-referred 8-bit copies.
 
 Cryptomatte decoding, OCIO/ACES display/AgX/Filmic transforms, optical bokeh, independent adjustment stacks per mask, advanced lens models and other items listed in the limits matrix remain unfinished. They are not presented as working controls. The app's EXR support covers flat layers/channels, not deep or offset-data-window EXRs. Source metadata round-trip is not implemented.
 

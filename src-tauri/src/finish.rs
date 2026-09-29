@@ -1306,6 +1306,17 @@ pub fn write(path: &Path, f: &Frame, o: &Output) -> Result<(), String> {
         }
     }
     f.px.par_chunks_mut(4).for_each(|p| output_rgb(p, &o.space));
+    if f.px.iter().any(|v| !v.is_finite()) {
+        return Err(
+            "Output contains non-finite values. Reduce the adjustment strength before exporting."
+                .into(),
+        );
+    }
+    if o.format == "exr" && o.bit_depth == 16 && f.px.iter().any(|v| v.abs() > 65504.) {
+        return Err(
+            "HDR values exceed the half-float range. Choose 32-bit EXR to preserve them.".into(),
+        );
+    }
     let mut encoded = std::io::Cursor::new(Vec::new());
     if o.format == "exr" {
         use exr::prelude::*;
@@ -1585,6 +1596,26 @@ mod tests {
         std::fs::remove_file(path).unwrap();
         std::fs::remove_dir(root).unwrap();
     }
+    #[test]
+    fn exr_half_overflow_requires_float_output() {
+        let path =
+            std::env::temp_dir().join(format!("studio-half-overflow-{}.exr", std::process::id()));
+        let f = Frame {
+            w: 1,
+            h: 1,
+            px: vec![100000., -80000., 0.5, 1.],
+        };
+        let _ = std::fs::remove_file(&path);
+        assert!(write(&path, &f, &output("exr", 16))
+            .unwrap_err()
+            .contains("32-bit EXR"));
+        assert!(!path.exists());
+        write(&path, &f, &output("exr", 32)).unwrap();
+        let (back, _, _) = read(&path, "linear").unwrap();
+        assert_eq!(f.px, back.px);
+        std::fs::remove_file(path).unwrap();
+    }
+
     #[test]
     fn icc_preserves_p3_colors_outside_srgb_gamut() {
         let path =
