@@ -15,7 +15,10 @@ Intensity, Tone and Structure now call the provider, each with range 0â€“2 and d
 - Full-image neural rendering by default; explicit optional feathered region mask.
 - Zoom inspects the same processed pixels as the main image and exports.
 - Separate contrast, gamma, vibrance, brightness, saturation and hue, plus three color presets.
-- Ctrl+O, image paste and drag-and-drop; draggable zoom, wheel magnification, Z to restore it.
+- Ctrl+O, image paste and drag-and-drop.
+- Main image zoom from 1×–10× by wheel or slider; drag to pan, Fit to reset.
+- Toggle the floating inspector with the checkbox; adjust detail from 1×–10× and drag its header anywhere inside the app. Z restores it.
+- Sliders support continuous mouse/touch dragging and keyboard adjustments.
 - Original-dimension PNG/JPEG/TIFF export, Windows clipboard, and three-neural-style batch export.
 - Local processing, cached neural results, runtime diagnostics and obsolete-preview rejection.
 

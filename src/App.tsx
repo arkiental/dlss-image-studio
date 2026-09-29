@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { RangeInput } from "./RangeInput";
 import {
   useEffect,
   useRef,
@@ -103,20 +105,19 @@ function Slider({
         />
       </div>
       <div className="slider-wrap">
-        <input
-          aria-label={label}
-          disabled={disabled}
-          type="range"
+        <RangeInput
+          label={label}
+          value={value}
           min={min}
           max={max}
           step={step}
-          value={value}
+          disabled={disabled}
           style={
             {
               "--fill": `${((value - min) / (max - min)) * 100}%`,
             } as CSSProperties
           }
-          onChange={(e) => onChange(+e.target.value)}
+          onValue={onChange}
         />
         <div className="ticks" />
       </div>
@@ -133,6 +134,7 @@ export default function App() {
     [dimensions, setDimensions] = useState({ w: 1560, h: 1008 }),
     [size, setSize] = useState({ w: 1000, h: 660 }),
     [settings, setSettings] = useState(false),
+    [view, setView] = useState({ scale: 1, x: 0, y: 0 }),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [sourceRevision, setSourceRevision] = useState(0),
@@ -150,10 +152,54 @@ export default function App() {
     sourceReady = useRef(false),
     sourceGeneration = useRef(0),
     input = useRef<HTMLInputElement>(null),
-    stateRef = useRef(state);
+    stateRef = useRef(state),
+    panGesture = useRef<null | { x: number; y: number; view: typeof view }>(
+      null,
+    );
   stateRef.current = state;
   const fit = imageFit(dimensions.w, dimensions.h, size.w, size.h),
     region = state.local.region;
+  const imageBox = {
+    x: (size.w - fit.width * view.scale) / 2 + view.x,
+    y: (size.h - fit.height * view.scale) / 2 + view.y,
+    width: fit.width * view.scale,
+    height: fit.height * view.scale,
+  };
+  function boundedView(next: typeof view) {
+    const mx = Math.max(0, (fit.width * next.scale - size.w) / 2),
+      my = Math.max(0, (fit.height * next.scale - size.h) / 2);
+    return { ...next, x: clamp(next.x, -mx, mx), y: clamp(next.y, -my, my) };
+  }
+  function zoomImage(scale: number, point = { x: size.w / 2, y: size.h / 2 }) {
+    scale = clamp(scale, 1, 10);
+    const ratio = scale / view.scale;
+    setView(
+      boundedView({
+        scale,
+        x: (point.x - size.w / 2) * (1 - ratio) + view.x * ratio,
+        y: (point.y - size.h / 2) * (1 - ratio) + view.y * ratio,
+      }),
+    );
+  }
+  useEffect(() => {
+    setView((v) => boundedView(v));
+  }, [size.w, size.h, dimensions.w, dimensions.h]);
+  useEffect(() => {
+    const keepVisible = () =>
+      setState((s) => ({
+        ...s,
+        zoom: {
+          ...s.zoom,
+          position: {
+            x: clamp(s.zoom.position.x, 8, Math.max(8, innerWidth - 314)),
+            y: clamp(s.zoom.position.y, 64, Math.max(64, innerHeight - 263)),
+          },
+        },
+      }));
+    window.addEventListener("resize", keepVisible);
+    keepVisible();
+    return () => window.removeEventListener("resize", keepVisible);
+  }, []);
   const notify = (s: string) => setMessage(s);
   useEffect(() => {
     const observer = new ResizeObserver(([e]) =>
@@ -173,6 +219,7 @@ export default function App() {
     ++version.current;
     sourceReady.current = false;
     source.current = null;
+    setView({ scale: 1, x: 0, y: 0 });
     setBusy(true);
     const image = new Image();
     image.onload = async () => {
@@ -411,6 +458,7 @@ export default function App() {
   function drag(e: PointerEvent, kind: "region" | "zoom") {
     if ((e.target as HTMLElement).closest("button")) return;
     e.preventDefault();
+    e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     const startX = e.clientX,
       startY = e.clientY,
@@ -425,8 +473,8 @@ export default function App() {
               initial.local.region,
               ev.clientX - startX,
               ev.clientY - startY,
-              fit.width,
-              fit.height,
+              imageBox.width,
+              imageBox.height,
             ),
           },
         }));
@@ -438,13 +486,13 @@ export default function App() {
             position: {
               x: clamp(
                 initial.zoom.position.x + ev.clientX - startX,
-                0,
-                Math.max(0, fit.width - 306),
+                8,
+                Math.max(8, innerWidth - 314),
               ),
               y: clamp(
                 initial.zoom.position.y + ev.clientY - startY,
-                0,
-                Math.max(0, fit.height - 255),
+                64,
+                Math.max(64, innerHeight - 263),
               ),
             },
           },
@@ -453,9 +501,11 @@ export default function App() {
     const end = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
   }
   async function exportImage(kind: "file" | "clipboard" | "all") {
     const sourceId = sourceGeneration.current;
@@ -539,7 +589,6 @@ export default function App() {
           onDoubleClick={() => windowAction("toggleMaximize")}
         >
           <h1 data-tauri-drag-region>DLSS Image Studio</h1>
-          <span data-tauri-drag-region>ENHANCE. REFINE. EXPORT.</span>
         </div>
         <button
           className="settings-button"
@@ -571,35 +620,109 @@ export default function App() {
               if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
             }}
           >
-            <div className="viewport" ref={viewport}>
+            <div className="image-toolbar">
+              <label>
+                <RangeInput
+                  label="Image zoom"
+                  min={1}
+                  max={10}
+                  step={0.1}
+                  value={view.scale}
+                  onValue={(v) => zoomImage(v)}
+                />
+              </label>
+              <span>{view.scale.toFixed(1)}×</span>
+              <button onClick={() => setView({ scale: 1, x: 0, y: 0 })}>
+                Fit
+              </button>
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label="Show zoom inspector"
+                  checked={state.zoom.visible}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      zoom: { ...s.zoom, visible: e.target.checked },
+                    }))
+                  }
+                />{" "}
+              </label>
+              {state.zoom.visible && (
+                <>
+                  <label>
+                    Detail{" "}
+                    <RangeInput
+                      label="Inspector zoom factor"
+                      min={1}
+                      max={10}
+                      step={0.1}
+                      value={state.zoom.factor}
+                      onValue={(v) =>
+                        setState((s) => ({
+                          ...s,
+                          zoom: { ...s.zoom, factor: v },
+                        }))
+                      }
+                    />
+                  </label>
+                  <span>{state.zoom.factor.toFixed(1)}×</span>
+                </>
+              )}
+            </div>
+            <div
+              className="viewport"
+              ref={viewport}
+              title="Scroll to zoom; drag the image to pan. Fit resets the view."
+              onWheel={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                zoomImage(view.scale * Math.exp(-e.deltaY * 0.0015), {
+                  x: e.clientX - r.left,
+                  y: e.clientY - r.top,
+                });
+              }}
+              onPointerDown={(e) => {
+                if (
+                  e.button !== 0 ||
+                  view.scale <= 1 ||
+                  (e.target as HTMLElement).closest(".selection")
+                )
+                  return;
+                e.preventDefault();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                panGesture.current = { x: e.clientX, y: e.clientY, view };
+              }}
+              onPointerMove={(e) => {
+                const g = panGesture.current;
+                if (g && e.currentTarget.hasPointerCapture(e.pointerId))
+                  setView(
+                    boundedView({
+                      ...g.view,
+                      x: g.view.x + e.clientX - g.x,
+                      y: g.view.y + e.clientY - g.y,
+                    }),
+                  );
+              }}
+              onPointerUp={(e) => {
+                panGesture.current = null;
+                if (e.currentTarget.hasPointerCapture(e.pointerId))
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+              }}
+              onPointerCancel={() => {
+                panGesture.current = null;
+              }}
+              style={{ cursor: view.scale > 1 ? "grab" : "default" }}
+            >
               <div
                 className="image-space"
                 style={{
-                  left: fit.x,
-                  top: fit.y,
-                  width: fit.width,
-                  height: fit.height,
+                  left: imageBox.x,
+                  top: imageBox.y,
+                  width: imageBox.width,
+                  height: imageBox.height,
                 }}
               >
                 <canvas ref={canvas} className="main-image" />
-                <svg className="guides" width="100%" height="100%">
-                  {state.zoom.visible && (
-                    <>
-                      <line
-                        x1={state.zoom.position.x}
-                        y1={state.zoom.position.y + 254}
-                        x2={region.x * fit.width}
-                        y2={region.y * fit.height}
-                      />
-                      <line
-                        x1={state.zoom.position.x + 306}
-                        y1={state.zoom.position.y + 254}
-                        x2={(region.x + region.width) * fit.width}
-                        y2={region.y * fit.height}
-                      />
-                    </>
-                  )}
-                </svg>
                 <div
                   aria-label={
                     state.local.scope === "region"
@@ -626,8 +749,8 @@ export default function App() {
                             s.local.region,
                             delta[0],
                             delta[1],
-                            fit.width,
-                            fit.height,
+                            imageBox.width,
+                            imageBox.height,
                           ),
                         },
                       }));
@@ -642,43 +765,6 @@ export default function App() {
                     height: region.height * 100 + "%",
                   }}
                 />
-                {state.zoom.visible && (
-                  <div
-                    className="zoom-panel"
-                    style={{
-                      left: state.zoom.position.x,
-                      top: state.zoom.position.y,
-                    }}
-                    onWheel={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        zoom: {
-                          ...s.zoom,
-                          factor: clamp(s.zoom.factor - e.deltaY * 0.002, 1, 8),
-                        },
-                      }))
-                    }
-                  >
-                    <div
-                      className="zoom-header"
-                      onPointerDown={(e) => drag(e, "zoom")}
-                    >
-                      Zoom {state.zoom.factor.toFixed(1)}x
-                      <button
-                        aria-label="Close zoom"
-                        onClick={() =>
-                          setState((s) => ({
-                            ...s,
-                            zoom: { ...s.zoom, visible: false },
-                          }))
-                        }
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <canvas ref={zoomCanvas} />
-                  </div>
-                )}
               </div>
             </div>
           </section>
@@ -720,21 +806,6 @@ export default function App() {
                 Reset
               </button>
             </div>
-            <p className="adjustment-hint" role="status">
-              {!isTauri()
-                ? "Browser preview · neural rendering requires the Windows app"
-                : !state.neural.enabled
-                  ? "Neural rendering off · enable in Settings"
-                  : busy
-                    ? "Processing…"
-                    : previewReady
-                      ? `NGX verified · ${Math.round(cap?.neural_diagnostics?.round_trip_ms ?? 0)} ms`
-                      : "Neural result unavailable · check Settings"}
-              {" · "}
-              {state.local.scope === "image"
-                ? "Whole image; dashed box inspects zoom"
-                : "Neural effect limited to the selected area"}
-            </p>
             <div className="local-controls">
               {(["intensity", "tone", "structure"] as const).map((key, i) => (
                 <Slider
@@ -757,9 +828,7 @@ export default function App() {
         </div>
         <aside className="right-panel">
           <div className="look">
-            <h2>Adjust Look</h2>
             <section className="style-section">
-              <h3>Style</h3>
               <div className="styles">
                 {(["Cinematic", "Default", "Natural"] as const).map((style) => (
                   <button
@@ -788,23 +857,19 @@ export default function App() {
               </h3>
               <div className="resolution-row">
                 <div className="slider-wrap">
-                  <input
+                  <RangeInput
+                    label="Resolution"
                     disabled={!state.neural.enabled}
-                    aria-label="Resolution"
-                    type="range"
-                    min="1"
-                    max="100"
+                    min={1}
+                    max={100}
                     value={state.processingResolution}
                     style={
                       {
                         "--fill": state.processingResolution + "%",
                       } as CSSProperties
                     }
-                    onChange={(e) =>
-                      setState((s) => ({
-                        ...s,
-                        processingResolution: +e.target.value,
-                      }))
+                    onValue={(v) =>
+                      setState((s) => ({ ...s, processingResolution: v }))
                     }
                   />
                   <div className="ticks" />
@@ -888,6 +953,43 @@ export default function App() {
           if (e.target.files?.[0]) loadFile(e.target.files[0]);
         }}
       />
+      {state.zoom.visible &&
+        createPortal(
+          <div
+            className="zoom-panel"
+            style={{
+              left: state.zoom.position.x,
+              top: state.zoom.position.y,
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
+              setState((s) => ({
+                ...s,
+                zoom: {
+                  ...s.zoom,
+                  factor: clamp(s.zoom.factor - e.deltaY * 0.002, 1, 10),
+                },
+              }));
+            }}
+          >
+            <div className="zoom-header" onPointerDown={(e) => drag(e, "zoom")}>
+              Zoom {state.zoom.factor.toFixed(1)}x
+              <button
+                aria-label="Close zoom"
+                onClick={() =>
+                  setState((s) => ({
+                    ...s,
+                    zoom: { ...s.zoom, visible: false },
+                  }))
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <canvas ref={zoomCanvas} />
+          </div>,
+          document.body,
+        )}
       {busy && (
         <div className="busy" role="status">
           Processing…
