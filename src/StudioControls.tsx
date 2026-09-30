@@ -32,6 +32,7 @@ export function Control({
   card?: boolean;
 }) {
   const numericDrag = useRef<{ x: number; value: number } | null>(null);
+  const numericStart = useRef<number | null>(null);
   const [numericValue, setNumericValue] = useState(
     String(Number(value.toFixed(3))),
   );
@@ -84,6 +85,7 @@ export function Control({
         min={min}
         max={max}
         step={step}
+        onFocus={() => (numericStart.current = value)}
         onChange={(e) => {
           setNumericValue(e.target.value);
           const next = e.target.valueAsNumber;
@@ -94,7 +96,9 @@ export function Control({
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
           if (e.key === "Escape") {
-            setNumericValue(String(Number(value.toFixed(3))));
+            const original = numericStart.current ?? value;
+            onChange(original);
+            setNumericValue(String(Number(original.toFixed(3))));
             e.currentTarget.blur();
           }
         }}
@@ -164,8 +168,15 @@ function GroupContent({
       }
     };
     window.addEventListener("studio-close-group", close);
+    const reveal = (e: Event) => {
+      if ((e as CustomEvent).detail !== name) return;
+      setOpen(true);
+      localStorage.setItem("group:" + name, "true");
+    };
+    window.addEventListener("studio-open-group", reveal);
     return () => {
       window.removeEventListener("studio-close-group", close);
+      window.removeEventListener("studio-open-group", reveal);
       const i = openedGroups.indexOf(name);
       if (i >= 0) openedGroups.splice(i, 1);
     };

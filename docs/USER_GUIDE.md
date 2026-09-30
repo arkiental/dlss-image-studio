@@ -23,6 +23,9 @@ box to move it or drag a corner or edge handle to resize it. Arrow keys move the
 focused box by one image pixel; focused handles resize it. Hold Shift for ten-pixel
 steps. Escape cancels an active drag. Its toggle does not change processing.
 Use the split-view controls for vertical or horizontal comparison; drag the divider.
+The **Before** and **After** buttons explicitly select the original or edited image.
+The preview label identifies the current view; edits made in Before appear in After.
+Type a zoom percentage and press Enter to apply it, or Escape to restore the previous view.
 
 `B` toggles before/after; hold `\` to temporarily inspect the original. `F` fits,
 `1` selects 100%, `Z` toggles the inspector, `P` hides the UI and `F11` fullscreen.
@@ -44,6 +47,11 @@ of that failed state; it does not silently switch to conventional enhancement.
 
 Drag sliders or type numeric values. Arrow keys adjust sliders; Shift and Ctrl
 provide finer increments. Double-click or right-click supported controls to reset.
+Press Enter or leave a numeric field to commit the edit; Escape restores its starting value.
+Use **Find adjustment** or `Ctrl+K` to search controls and workspace actions. Arrow keys
+select a result, Enter opens its section and focuses the control, and Escape clears search.
+When neural rendering is off, its controls are folded away. **Controls** and
+**Neural settings** keep those options available without taking space from the image.
 Cold neural startup takes longer than subsequent cached/warm previews. A new
 evaluation resolution may restart the provider. Wait for Ready before exporting.
 
@@ -82,6 +90,11 @@ reference source and render-pass paths, so keep those files with your work when
 moving computers. Custom LUT assets are embedded in projects/presets. Save
 named snapshots in the bottom strip; history and `Ctrl+Z` / `Ctrl+Shift+Z` help
 compare and undo changes. A project is not a replacement for a source-image backup.
+History names the changed controls and their values. Snapshot names remain unique;
+use the pencil to rename, Enter to commit, or Escape to cancel. Deleting a snapshot
+offers an immediate Undo action. A snapshot remains selected only while the current
+edits match it. **Workspace > Presets** searches both built-in looks and saved presets;
+applying a result uses the bottom strip's strength and apply-part settings.
 
 Use **Workspace > Batch** to add images, apply shared settings or per-image overrides, select an
 output folder and process the queue. Check errors individually. The batch queue

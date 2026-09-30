@@ -1,7 +1,11 @@
 import { expect } from "@playwright/test";
 import { resolve } from "node:path";
 
-export async function checkInspectorSelection(page, evidenceDir) {
+export async function checkInspectorSelection(
+  page,
+  evidenceDir,
+  evidencePrefix = "corrected",
+) {
   const selection = page.getByTestId("inspector-selection");
   const handle = (direction) =>
     selection.locator(`[data-handle="${direction}"]`);
@@ -182,10 +186,10 @@ export async function checkInspectorSelection(page, evidenceDir) {
   await drag(page.locator(".zoom-header"), -1120, 80);
   await page.getByRole("tab", { name: "Workspace", exact: true }).click();
   await page.getByRole("tab", { name: "Passes", exact: true }).click();
-  await expect(page.locator(".studio-status")).toContainText("Ready", {
+  await expect(page.locator(".studio-status")).toContainText("Preview ready", {
     timeout: 30000,
   });
-  const screenshot = resolve(evidenceDir, "corrected-selection.png");
+  const screenshot = resolve(evidenceDir, `${evidencePrefix}-selection.png`);
   await page.screenshot({ path: screenshot });
   await factor.fill(initialFactor);
   await zoom.uncheck();

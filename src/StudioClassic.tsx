@@ -11,7 +11,9 @@ import {
   RotateCcw,
   Sun,
   Triangle,
+  ChevronDown,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { Control } from "./StudioControls";
 import { useStudio } from "./useStudio";
@@ -21,6 +23,10 @@ type Document = ReturnType<typeof useStudio>;
 
 export function QuickLook({ d }: { d: Document }) {
   const s = d.state;
+  const [optionsOpen, setOptionsOpen] = useState(s.neural.enabled);
+  useEffect(() => {
+    if (s.neural.enabled) setOptionsOpen(true);
+  }, [s.neural.enabled]);
   const controls = [
     ["contrast", "Contrast", Sun],
     ["gamma", "Gamma", Activity],
@@ -31,40 +37,49 @@ export function QuickLook({ d }: { d: Document }) {
   ] as const;
   return (
     <div className="quick-look">
-      <div className="neural-styles">
-        {(["Cinematic", "Default", "Natural"] as const).map((style) => (
-          <button
-            key={style}
-            disabled={!s.neural.enabled}
-            title="Neural rendering style"
-            className={s.neural.style === style ? "active" : ""}
-            onClick={() =>
-              d.setState((p) => ({ ...p, neural: { ...p.neural, style } }))
-            }
-          >
-            {style === "Default" ? "Neutral" : style}
-          </button>
-        ))}
-      </div>
-      <div className="classic-resolution">
-        <Control
-          card
-          label="Resolution"
-          value={s.processingResolution}
-          min={1}
-          max={100}
-          reset={100}
-          disabled={!s.neural.enabled}
-          tip="Neural evaluation resolution (%). Export retains the original dimensions."
-          onChange={(processingResolution) =>
-            d.setState((p) => ({ ...p, processingResolution }))
-          }
-        />
-        <div className="range-endpoints">
-          <span>1%</span>
-          <span>100%</span>
+      <details
+        className="neural-options"
+        open={optionsOpen}
+        onToggle={(e) => setOptionsOpen(e.currentTarget.open)}
+      >
+        <summary>
+          Neural settings <span>{s.neural.enabled ? "Enabled" : "Off"}</span>
+        </summary>
+        <div className="neural-styles">
+          {(["Cinematic", "Default", "Natural"] as const).map((style) => (
+            <button
+              key={style}
+              disabled={!s.neural.enabled}
+              title="Neural rendering style"
+              className={s.neural.style === style ? "active" : ""}
+              onClick={() =>
+                d.setState((p) => ({ ...p, neural: { ...p.neural, style } }))
+              }
+            >
+              {style === "Default" ? "Neutral" : style}
+            </button>
+          ))}
         </div>
-      </div>
+        <div className="classic-resolution">
+          <Control
+            card
+            label="Resolution"
+            value={s.processingResolution}
+            min={1}
+            max={100}
+            reset={100}
+            disabled={!s.neural.enabled}
+            tip="Neural evaluation resolution (%). Export retains the original dimensions."
+            onChange={(processingResolution) =>
+              d.setState((p) => ({ ...p, processingResolution }))
+            }
+          />
+          <div className="range-endpoints">
+            <span>1%</span>
+            <span>100%</span>
+          </div>
+        </div>
+      </details>
       <div className="classic-color-grid">
         {controls.map(([key, label, Icon]) => (
           <div className={key === "hue" ? "hue-control" : ""} key={key}>
@@ -94,16 +109,24 @@ export function NeuralAdjustments({
   setSelectedMask: (id: string) => void;
 }) {
   const s = d.state;
+  const [controlsOpen, setControlsOpen] = useState(s.neural.enabled);
+  useEffect(() => {
+    if (s.neural.enabled) setControlsOpen(true);
+  }, [s.neural.enabled]);
   return (
-    <section className="neural-adjustments">
+    <section
+      className={`neural-adjustments${s.neural.enabled ? "" : " neural-inactive"}`}
+    >
       <header>
         <h2>Neural Adjustments</h2>
         <label
           className="neural-enable"
           title={
-            d.info?.neuralSupported === false
-              ? "HDR/out-of-gamut source: use a tone-mapped sRGB copy. Original float data is preserved."
-              : "Neural rendering supports 8-bit and 16-bit SDR input; the original is preserved"
+            !isTauri()
+              ? "Neural rendering is available in the Windows app"
+              : d.info?.neuralSupported === false
+                ? "HDR/out-of-gamut source: use a tone-mapped sRGB copy. Original float data is preserved."
+                : "Neural rendering supports 8-bit and 16-bit SDR input; the original is preserved"
           }
         >
           <input
@@ -156,6 +179,14 @@ export function NeuralAdjustments({
           </button>
         </div>
         <button
+          className="neural-controls-toggle"
+          aria-expanded={controlsOpen}
+          aria-controls="neural-controls"
+          onClick={() => setControlsOpen((open) => !open)}
+        >
+          <ChevronDown size={14} /> Controls
+        </button>
+        <button
           className="neural-reset"
           title="Reset neural adjustments"
           aria-label="Reset neural adjustments"
@@ -170,6 +201,9 @@ export function NeuralAdjustments({
           Reset
         </button>
       </header>
+      {!s.neural.enabled && (
+        <p className="neural-status">Neural rendering off</p>
+      )}
       {(d.info?.neuralSupported === false || s.neural.toneMap) && (
         <div className="neural-input-mode">
           <span>
@@ -192,70 +226,103 @@ export function NeuralAdjustments({
           </button>
         </div>
       )}
-      <div className="neural-control-grid">
-        {(["intensity", "tone", "structure"] as const).map((key, i) => {
-          const Icon = [CircleDot, Circle, Triangle][i];
-          return (
-            <Control
-              key={key}
-              card
-              icon={<Icon size={28} strokeWidth={1.6} />}
-              label={["Intensity", "Local tone", "Local structure"][i]}
-              value={s.local[key]}
-              min={0}
-              max={2}
-              step={0.01}
-              reset={1}
-              disabled={!s.neural.enabled}
-              tip="Neural provider parameter. Default 1; range 0–2."
-              onChange={(value) =>
-                d.setState((p) => ({
-                  ...p,
-                  local: { ...p.local, [key]: value },
-                }))
-              }
-            />
-          );
-        })}
-      </div>
+      {controlsOpen && (
+        <div
+          id="neural-controls"
+          className="neural-control-grid neural-controls"
+        >
+          {(["intensity", "tone", "structure"] as const).map((key, i) => {
+            const Icon = [CircleDot, Circle, Triangle][i];
+            return (
+              <Control
+                key={key}
+                card
+                icon={<Icon size={28} strokeWidth={1.6} />}
+                label={["Intensity", "Local tone", "Local structure"][i]}
+                value={s.local[key]}
+                min={0}
+                max={2}
+                step={0.01}
+                reset={1}
+                disabled={!s.neural.enabled}
+                tip="Neural provider parameter. Default 1; range 0–2."
+                onChange={(value) =>
+                  d.setState((p) => ({
+                    ...p,
+                    local: { ...p.local, [key]: value },
+                  }))
+                }
+              />
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
 
-export function QuickExport({ d }: { d: Document }) {
+export function QuickExport({
+  d,
+  onSettings,
+}: {
+  d: Document;
+  onSettings?: () => void;
+}) {
   return (
-    <section className="classic-export">
-      <h2>Export</h2>
+    <section className="classic-export compact-export">
+      <header>
+        <h2>Export</h2>
+        <button
+          className="export-summary"
+          aria-label="Output settings"
+          title="Output settings"
+          onClick={onSettings}
+          disabled={!onSettings}
+        >
+          {d.output.format.toUpperCase()} · {d.output.bitDepth}-bit
+        </button>
+      </header>
       <div>
         <button
+          className="export-clipboard"
+          aria-label="Copy to Clipboard"
+          title={
+            !isTauri()
+              ? "Clipboard output is available in the Windows app"
+              : "Copy finished image to clipboard"
+          }
           disabled={!d.ready || d.busy || !isTauri()}
           onClick={() => d.exportImage("clipboard")}
         >
-          <Clipboard size={30} strokeWidth={1.6} />
-          <span>
-            Copy to
-            <br />
-            Clipboard
-          </span>
+          <Clipboard size={18} strokeWidth={1.6} />
         </button>
         <button
+          className="export-file primary"
+          title={
+            d.editing
+              ? "Finish the current edit to export"
+              : !d.ready || d.busy
+                ? "Wait for the preview to finish"
+                : "Export finished image"
+          }
           disabled={!d.ready || d.busy}
           onClick={() => d.exportImage("file")}
         >
-          <Download size={32} strokeWidth={1.6} />
+          <Download size={18} strokeWidth={1.6} />
           <span>Export to File</span>
         </button>
         <button
+          className="export-variants"
+          aria-label="Export All Variants"
           disabled={!d.ready || d.busy || !isTauri()}
           onClick={() => d.exportImage("all")}
-          title="Export snapshots, or all built-in presets when no snapshots exist"
+          title={
+            !isTauri()
+              ? "Variant export is available in the Windows app"
+              : "Export snapshots, or all built-in presets when no snapshots exist"
+          }
         >
-          <Layers size={32} strokeWidth={1.6} />
-          <span>
-            Export All
-            <br />
-            Variants
-          </span>
+          <Layers size={18} strokeWidth={1.6} />
         </button>
       </div>
     </section>

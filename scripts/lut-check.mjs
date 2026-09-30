@@ -22,7 +22,7 @@ await page.goto(studioUrl.href);
 const ready = async () => {
   await expect(page.getByText("Loading LUT�", { exact: true })).toHaveCount(0);
   // Hosted Windows runners use the CPU browser fallback, including after reload.
-  await expect(page.locator(".studio-status")).toContainText("Ready", {
+  await expect(page.locator(".studio-status")).toContainText("Preview ready", {
     timeout: 30000,
   });
 };
@@ -139,7 +139,7 @@ await page
   .getByRole("slider", { name: "LUT strength", exact: true })
   .fill("65");
 await ready();
-await page.getByLabel("Before/After mode").selectOption("vertical");
+await page.getByLabel("Comparison layout").selectOption("vertical");
 await page.screenshot({ path: resolve(evidenceDir, "studio-luts.png") });
 // Imported LUTs persist across application reloads. Embedded assets restore without the original file.
 const portability = await page.evaluate(async () => {

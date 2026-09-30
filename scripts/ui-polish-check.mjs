@@ -6,6 +6,7 @@ import { checkInspectorSelection } from "./inspector-selection-check.mjs";
 const studioUrl = new URL(process.env.STUDIO_URL || "http://127.0.0.1:1426");
 studioUrl.searchParams.set("demo", "1");
 const evidenceDir = resolve(process.env.EVIDENCE_DIR || "../evidence");
+const evidencePrefix = process.env.EVIDENCE_PREFIX || "corrected";
 await mkdir(evidenceDir, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
@@ -25,7 +26,7 @@ try {
   await page.goto(studioUrl.href);
   await expect(page.locator(".main-image")).toBeVisible();
   const ready = () =>
-    expect(page.locator(".studio-status")).toContainText("Ready", {
+    expect(page.locator(".studio-status")).toContainText("Preview ready", {
       timeout: 30000,
     });
   await ready();
@@ -191,6 +192,10 @@ try {
       await expect(workspaceTab(name)).toBeVisible();
   }
   await workspacePeer.press("Tab");
+  await expect(
+    page.getByRole("searchbox", { name: "Search adjustments", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(workspaceTab("Masks")).toBeFocused();
   for (const name of ["Passes", "Presets", "Batch", "Masks"]) {
     await page.keyboard.press("ArrowRight");
@@ -220,7 +225,7 @@ try {
   ).toBeFocused();
   await workspacePeer.click();
   checks.push(
-    "Workspace is a peer inspector tab; four visible sub-tabs remain available, Enter/Space activate, native Tab enters the selected child, arrows wrap and activate, and Home/End work at both tab levels",
+    "Workspace is a peer inspector tab; four visible sub-tabs remain available, Enter/Space activate, native Tab traverses search then the selected child, arrows wrap and activate, and Home/End work at both tab levels",
   );
 
   for (const name of panelNames) {
@@ -435,7 +440,7 @@ try {
     await page
       .getByRole("heading", { name: "DLSS Image Studio", exact: true })
       .click();
-    const screenshot = resolve(evidenceDir, `corrected-${name}.png`);
+    const screenshot = resolve(evidenceDir, `${evidencePrefix}-${name}.png`);
     await page.screenshot({ path: screenshot });
     report.screenshots.push(screenshot);
     checks.push(
@@ -445,11 +450,18 @@ try {
   await page.setViewportSize({ width: 1536, height: 1024 });
   await workspacePeer.click();
   await workspaceTab("Masks").click();
-  const workspaceScreenshot = resolve(evidenceDir, "corrected-workspace.png");
+  const workspaceScreenshot = resolve(
+    evidenceDir,
+    `${evidencePrefix}-workspace.png`,
+  );
   await page.screenshot({ path: workspaceScreenshot });
   report.screenshots.push(workspaceScreenshot);
   await inspectorTabs.getByRole("tab", { name: "Adjust", exact: true }).click();
-  const selectionResult = await checkInspectorSelection(page, evidenceDir);
+  const selectionResult = await checkInspectorSelection(
+    page,
+    evidenceDir,
+    evidencePrefix,
+  );
   checks.push(...selectionResult.checks);
   report.selection = selectionResult.measurements;
   report.screenshots.push(selectionResult.screenshot);
@@ -460,7 +472,10 @@ try {
   expect(dialogBounds.y).toBeGreaterThanOrEqual(0);
   expect(dialogBounds.x + dialogBounds.width).toBeLessThanOrEqual(1536);
   expect(dialogBounds.y + dialogBounds.height).toBeLessThanOrEqual(1024);
-  const settingsScreenshot = resolve(evidenceDir, "corrected-settings.png");
+  const settingsScreenshot = resolve(
+    evidenceDir,
+    `${evidencePrefix}-settings.png`,
+  );
   await page.screenshot({ path: settingsScreenshot });
   report.screenshots.push(settingsScreenshot);
   await page.keyboard.press("Escape");
@@ -477,7 +492,7 @@ try {
   process.exitCode = 1;
 } finally {
   await writeFile(
-    resolve(evidenceDir, "corrected-validation.json"),
+    resolve(evidenceDir, `${evidencePrefix}-validation.json`),
     JSON.stringify(report, null, 2),
   );
   await browser.close();

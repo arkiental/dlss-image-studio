@@ -1,4 +1,5 @@
 import { prepareLut, collectLuts, restoreLuts } from "./lutLibrary";
+import { historyLabel } from "./historyLabels";
 import { useEffect, useRef, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -13,6 +14,7 @@ import {
   type ExportConfig,
 } from "./finish";
 export type SourceInfo = {
+  name?: string;
   width: number;
   height: number;
   bitDepth: number;
@@ -142,22 +144,51 @@ export function useStudio() {
     return () => worker.current?.terminate();
   }, []);
   useEffect(() => {
+    let pointerEditing = false,
+      numericEditing = false;
+    const update = () => setDragging(pointerEditing || numericEditing);
     const down = (e: PointerEvent) => {
       if (
         (e.target as HTMLElement)?.closest(
           ".neural-adjustments input[type=range],.neural-adjustments input[type=number],.pro-inspector input[type=range],.pro-inspector input[type=number],.color-wheel,.curve-editor,.preset-strength input",
         )
-      )
-        setDragging(true);
+      ) {
+        pointerEditing = true;
+        update();
+      }
     };
-    const up = () => setDragging(false);
+    const up = () => {
+      pointerEditing = false;
+      update();
+    };
+    const focus = (e: FocusEvent) => {
+      numericEditing =
+        e.target instanceof HTMLInputElement &&
+        e.target.type === "number" &&
+        !!e.target.closest(".pro-control,.preset-strength");
+      update();
+    };
+    const unfocus = () => {
+      numericEditing = false;
+      update();
+    };
+    const blur = () => {
+      pointerEditing = numericEditing = false;
+      update();
+    };
     window.addEventListener("pointerdown", down, true);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
+    window.addEventListener("focusin", focus);
+    window.addEventListener("focusout", unfocus);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("pointerdown", down, true);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
+      window.removeEventListener("focusin", focus);
+      window.removeEventListener("focusout", unfocus);
+      window.removeEventListener("blur", blur);
     };
   }, []);
   useEffect(() => {
@@ -171,9 +202,10 @@ export function useStudio() {
     const timer = setTimeout(() => {
       const entry = {
         id: crypto.randomUUID(),
-        name: historyRef.current.length
-          ? "Adjustment " + (historyRef.current.length + 1)
-          : "Original settings",
+        name: historyLabel(
+          historyRef.current[cursorRef.current]?.state,
+          current.current,
+        ),
         state: structuredClone(current.current),
       };
       const next = [
@@ -181,6 +213,8 @@ export function useStudio() {
         entry,
       ].slice(-100);
       lastHistoryKey.current = key;
+      historyRef.current = next;
+      cursorRef.current = next.length - 1;
       setHistory(next);
       setCursor(next.length - 1);
     }, 220);
@@ -229,17 +263,41 @@ export function useStudio() {
   function restore(i: number) {
     const entry = historyRef.current[i];
     if (!entry) return;
+    if (editKey(entry.state) === editKey(current.current)) {
+      skipHistory.current = false;
+      lastHistoryKey.current = editKey(current.current);
+      cursorRef.current = i;
+      setCursor(i);
+      return;
+    }
     skipHistory.current = true;
+    cursorRef.current = i;
     setCursor(i);
-    setState(structuredClone(entry.state));
+    const restored = structuredClone(entry.state);
+    restored.zoom = current.current.zoom;
+    current.current = restored;
+    setState(restored);
   }
   function undo() {
     if (
       editKey(current.current) !== lastHistoryKey.current &&
       cursorRef.current >= 0
     ) {
-      skipHistory.current = true;
-      setState(structuredClone(historyRef.current[cursorRef.current].state));
+      const pending = {
+        id: crypto.randomUUID(),
+        name: historyLabel(
+          historyRef.current[cursorRef.current].state,
+          current.current,
+        ),
+        state: structuredClone(current.current),
+      };
+      const next = [
+        ...historyRef.current.slice(0, cursorRef.current + 1),
+        pending,
+      ].slice(-100);
+      historyRef.current = next;
+      setHistory(next);
+      restore(next.length - 2);
     } else restore(cursorRef.current - 1);
   }
   function resetDocument() {
@@ -320,6 +378,7 @@ export function useStudio() {
       setSource(p);
       setImage(p);
       setInfo({
+        name: file.name,
         width: p.width,
         height: p.height,
         bitDepth: 8,
@@ -714,12 +773,15 @@ export function useStudio() {
     info,
     setInfo,
     busy,
+    editing: dragging,
     error,
     setError,
     ready: ready === renderKey && !dragging,
     cap,
     history,
     cursor,
+    canUndo: cursor > 0 || (cursor >= 0 && key !== lastHistoryKey.current),
+    canRedo: cursor >= 0 && cursor < history.length - 1,
     restore,
     undo,
     redo: () => restore(cursorRef.current + 1),

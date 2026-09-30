@@ -17,7 +17,9 @@ page.on("pageerror", (e) => errors.push(e.message));
 await page.goto(studioUrl.href);
 await expect(page.locator(".main-image")).toBeVisible();
 await page.waitForFunction(() =>
-  document.querySelector(".studio-status")?.textContent?.includes("Ready"),
+  document
+    .querySelector(".studio-status")
+    ?.textContent?.includes("Preview ready"),
 );
 await page.getByRole("checkbox", { name: "Show zoom inspector" }).uncheck();
 await page
@@ -38,9 +40,11 @@ await page.getByRole("tab", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1");
 await page.waitForFunction(() =>
-  document.querySelector(".studio-status")?.textContent?.includes("Ready"),
+  document
+    .querySelector(".studio-status")
+    ?.textContent?.includes("Preview ready"),
 );
-await page.getByLabel("Before/After mode").selectOption("vertical");
+await page.getByLabel("Comparison layout").selectOption("vertical");
 await page.screenshot({ path: resolve(evidenceDir, "studio-comparison.png") });
 await page.setViewportSize({ width: 1080, height: 840 });
 await page.getByRole("tab", { name: "Adjust", exact: true }).click();
@@ -56,13 +60,15 @@ if (
   throw Error("Compact layout clips the color slider cards");
 await page.screenshot({ path: resolve(evidenceDir, "studio-compact.png") });
 await page.setViewportSize({ width: 1536, height: 1024 });
-await page.getByLabel("Before/After mode").selectOption("processed");
+await page.getByRole("button", { name: "After", exact: true }).click();
 await page.getByRole("tab", { name: "Workspace", exact: true }).click();
 await page.getByRole("tab", { name: "Masks", exact: true }).click();
 await page.getByLabel("Add mask").selectOption("ellipse");
 await page.getByRole("slider", { name: "Feather", exact: true }).fill("35");
 await page.waitForFunction(() =>
-  document.querySelector(".studio-status")?.textContent?.includes("Ready"),
+  document
+    .querySelector(".studio-status")
+    ?.textContent?.includes("Preview ready"),
 );
 await page.waitForTimeout(150);
 await page.screenshot({ path: resolve(evidenceDir, "studio-masks.png") });

@@ -16,17 +16,22 @@ import {
   SlidersHorizontal,
   History,
   Plus,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { QuickLook } from "./StudioClassic";
 import { WorkspaceSection } from "./WorkspaceSection";
 import { Control, Group, CurveEditor, ColorWheel } from "./StudioControls";
 import { useStudio, imageUrl } from "./useStudio";
 import { defaults, type StudioState } from "./state";
+import { uniqueVariantName } from "./variantNames";
 import {
   finishDefaults,
   newMask,
   blendPreset,
   normalizeState,
+  editKey,
   type Finish,
   type MaskKind,
   type NamedState,
@@ -95,22 +100,51 @@ export function Variants({
   d,
   bottom,
   setBottom,
+  presetRequest,
 }: {
   d: Document;
   bottom: string;
   setBottom: (v: string) => void;
+  presetRequest?: { id: string; token: number } | null;
 }) {
   const [name, setName] = useState(""),
     [selected, setSelected] = useState(""),
     [selectedSnapshot, setSelectedSnapshot] = useState(""),
     [strength, setStrength] = useState(100),
     [part, setPart] = useState("all");
-  const canCapture = !!d.source && !!d.image && d.ready && !d.busy;
-  const captureTitle = !d.source
-    ? "Open an image to create a snapshot"
-    : !canCapture
-      ? "Wait for the preview to finish"
-      : "Create snapshot";
+  const [feedback, setFeedback] = useState("");
+  const [deletedSnapshot, setDeletedSnapshot] = useState<{
+    item: NamedState;
+    index: number;
+  } | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+  const nameInput = useRef<HTMLInputElement>(null);
+  const renameInput = useRef<HTMLInputElement>(null);
+  const captureButton = useRef<HTMLButtonElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
+  const lastPresetToken = useRef(presetRequest?.token);
+  const strengthStart = useRef<{ value: number; state: StudioState } | null>(
+    null,
+  );
+  const currentKey = editKey(d.state);
+  const matchingSnapshots = d.snapshots.filter(
+    (item) => editKey(item.state) === currentKey,
+  );
+  const activeSnapshot =
+    matchingSnapshots.find((item) => item.id === selectedSnapshot)?.id ||
+    matchingSnapshots[0]?.id ||
+    "";
+  const canCapture =
+    !!d.source && !!d.image && d.ready && !d.busy && !d.editing;
+  const captureTitle = d.editing
+    ? "Finish the current edit to create a snapshot"
+    : !d.source
+      ? "Open an image to create a snapshot"
+      : !canCapture
+        ? "Wait for the preview to finish"
+        : "Create snapshot";
   const base = useRef<StudioState | null>(null);
   const presets = useMemo(
     () => [
@@ -121,6 +155,15 @@ export function Variants({
     [d.presets],
   );
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setName("");
+    setSelected("");
+    setSelectedSnapshot("");
+    setRenaming(null);
+    setDeletedSnapshot(null);
+    setFeedback("");
+    base.current = null;
+  }, [d.source]);
   useEffect(() => {
     if (!d.source) return;
     const full = document.createElement("canvas");
@@ -184,39 +227,99 @@ export function Variants({
     if (id !== selected || !base.current)
       base.current = structuredClone(d.state);
     setSelected(id);
+    setSelectedSnapshot("");
+    setDeletedSnapshot(null);
     d.setState(blendPreset(base.current, preset.state, n, p));
+    setFeedback(
+      `Applied ${preset.name} · ${n}% ${p === "all" ? "all adjustments" : p}`,
+    );
+  };
+  useEffect(() => {
+    if (presetRequest && presetRequest.token !== lastPresetToken.current) {
+      lastPresetToken.current = presetRequest.token;
+      apply(presetRequest.id);
+    }
+  }, [presetRequest]);
+  useEffect(() => {
+    if (renaming) {
+      renameInput.current?.focus();
+      renameInput.current?.select();
+    }
+  }, [renaming?.id]);
+  const focusSnapshot = (id: string) => {
+    requestAnimationFrame(() =>
+      strip.current
+        ?.querySelector<HTMLButtonElement>(
+          `[data-snapshot-id="${id}"] > button`,
+        )
+        ?.focus(),
+    );
   };
   const capture = () => {
     if (!canCapture) return;
     const id = crypto.randomUUID();
+    const snapshotName = uniqueVariantName(name, "Snapshot", d.snapshots);
+    const thumbnail = captureThumbnail();
     d.setSnapshots((v) =>
       [
         ...v,
         {
           id,
-          name: name.trim() || `Snapshot ${v.length + 1}`,
-          thumbnail: captureThumbnail(),
+          name: snapshotName,
+          thumbnail,
           state: structuredClone(d.state),
         },
       ].slice(-64),
     );
     setSelectedSnapshot(id);
+    setName("");
+    setDeletedSnapshot(null);
+    setFeedback(`Created ${snapshotName}`);
     setBottom("Snapshots");
+    focusSnapshot(id);
   };
   const savePreset = () => {
+    const id = crypto.randomUUID();
+    const presetName = uniqueVariantName(name, "Preset", d.presets);
     d.setPresets((v) => [
       ...v,
       {
-        id: crypto.randomUUID(),
-        name: name.trim() || `Preset ${v.length + 1}`,
+        id,
+        name: presetName,
         category: "User",
         state: structuredClone(d.state),
       },
     ]);
+    setName("");
+    setDeletedSnapshot(null);
+    setFeedback(`Saved ${presetName}`);
+    nameInput.current?.focus();
     setBottom("Presets");
   };
+  const finishRename = (commit: boolean) => {
+    if (!renaming) return;
+    const id = renaming.id;
+    if (commit) {
+      const nextName = uniqueVariantName(
+        renaming.name,
+        "Snapshot",
+        d.snapshots.filter((item) => item.id !== id),
+      );
+      d.setSnapshots((items) =>
+        items.map((item) =>
+          item.id === id ? { ...item, name: nextName } : item,
+        ),
+      );
+      setFeedback(`Renamed to ${nextName}`);
+      setDeletedSnapshot(null);
+    }
+    setRenaming(null);
+    focusSnapshot(id);
+  };
   return (
-    <section className="variant-shelf">
+    <section
+      className={`variant-shelf${bottom === "Snapshots" && !d.snapshots.length ? " shelf-empty" : ""}`}
+    >
       <div className="shelf-toolbar">
         <div className="shelf-tabs">
           {["Presets", "Snapshots", "History"].map((n) => (
@@ -232,16 +335,21 @@ export function Variants({
         </div>
         <div className="shelf-actions">
           <input
+            ref={nameInput}
             aria-label="Variant name"
             placeholder="Snapshot / preset name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={64}
             onKeyDown={(e) => {
-              if (e.key === "Enter") capture();
+              if (e.key === "Enter") {
+                if (bottom === "Presets") savePreset();
+                else capture();
+              }
             }}
           />
           <button
+            ref={captureButton}
             className="snapshot-action"
             title={captureTitle}
             aria-label="Create snapshot"
@@ -269,6 +377,8 @@ export function Variants({
               setSelected("");
               setSelectedSnapshot("");
               base.current = null;
+              setDeletedSnapshot(null);
+              setFeedback("Reset adjustments");
               d.setState(s);
             }}
           >
@@ -277,6 +387,36 @@ export function Variants({
           </button>
         </div>
       </div>
+      {(feedback || deletedSnapshot) && (
+        <div className="shelf-feedback" role="status" aria-live="polite">
+          <span>
+            {deletedSnapshot
+              ? `Deleted ${deletedSnapshot.item.name}`
+              : feedback}
+          </span>
+          {deletedSnapshot && (
+            <button
+              type="button"
+              onClick={() => {
+                const { item, index } = deletedSnapshot;
+                d.setSnapshots((items) => {
+                  if (items.some((snapshot) => snapshot.id === item.id))
+                    return items;
+                  const next = items.slice();
+                  next.splice(Math.min(index, next.length), 0, item);
+                  return next.slice(-64);
+                });
+                setDeletedSnapshot(null);
+                setFeedback(`Restored ${item.name}`);
+                setSelectedSnapshot(item.id);
+                focusSnapshot(item.id);
+              }}
+            >
+              Undo delete
+            </button>
+          )}
+        </div>
+      )}
       {bottom === "Presets" && selected && (
         <div className="preset-strength">
           <label>
@@ -287,12 +427,34 @@ export function Variants({
               min={0}
               max={100}
               value={strength}
+              onFocus={() => {
+                strengthStart.current = {
+                  value: strength,
+                  state: structuredClone(d.state),
+                };
+              }}
               onChange={(e) => {
                 const value = e.target.valueAsNumber;
                 if (!Number.isFinite(value)) return;
                 const n = Math.max(0, Math.min(100, value));
                 setStrength(n);
                 apply(selected, n);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const start = strengthStart.current;
+                  if (start) {
+                    setStrength(start.value);
+                    d.setState(structuredClone(start.state));
+                    setFeedback("Canceled preset strength edit");
+                  }
+                  event.currentTarget.blur();
+                }
               }}
             />
             %
@@ -311,7 +473,7 @@ export function Variants({
           </select>
         </div>
       )}
-      <div className="variant-strip">
+      <div className="variant-strip" ref={strip}>
         {bottom === "History"
           ? d.history.map((h, i) => (
               <button
@@ -326,13 +488,13 @@ export function Variants({
             ))
           : (bottom === "Presets" ? presets : d.snapshots).map((v) => (
               <div
-                className={`variant ${(bottom === "Presets" ? selected : selectedSnapshot) === v.id ? "active" : ""}`}
+                className={`variant ${(bottom === "Presets" ? selected : activeSnapshot) === v.id ? "active" : ""}`}
                 key={v.id}
+                data-snapshot-id={bottom === "Snapshots" ? v.id : undefined}
               >
                 <button
                   aria-pressed={
-                    (bottom === "Presets" ? selected : selectedSnapshot) ===
-                    v.id
+                    (bottom === "Presets" ? selected : activeSnapshot) === v.id
                   }
                   title={
                     bottom === "Presets"
@@ -345,6 +507,8 @@ export function Variants({
                       setSelectedSnapshot(v.id);
                       setSelected("");
                       base.current = null;
+                      setDeletedSnapshot(null);
+                      setFeedback(`Restored ${v.name}`);
                       d.setState(structuredClone(v.state));
                     }
                   }}
@@ -364,26 +528,72 @@ export function Variants({
                       }
                     />
                   )}
-                  <span>{v.name}</span>
+                  <span
+                    hidden={bottom === "Snapshots" && renaming?.id === v.id}
+                  >
+                    {v.name}
+                  </span>
                 </button>
                 {bottom === "Snapshots" && (
-                  <button
-                    className="variant-delete"
-                    title={`Delete ${v.name}`}
-                    aria-label={`Delete snapshot ${v.name}`}
-                    onClick={() => {
-                      d.setSnapshots((q) => q.filter((p) => p.id !== v.id));
-                      if (selectedSnapshot === v.id) setSelectedSnapshot("");
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
+                  <>
+                    {renaming?.id === v.id && (
+                      <input
+                        ref={renameInput}
+                        className="variant-name-input"
+                        aria-label={`Rename snapshot ${v.name}`}
+                        value={renaming.name}
+                        maxLength={64}
+                        onChange={(event) =>
+                          setRenaming({ id: v.id, name: event.target.value })
+                        }
+                        onBlur={() => finishRename(true)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === "Escape") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            finishRename(event.key === "Enter");
+                          }
+                        }}
+                      />
+                    )}
+                    <button
+                      className="variant-rename"
+                      title={`Rename ${v.name}`}
+                      aria-label={`Rename snapshot ${v.name}`}
+                      onClick={() => setRenaming({ id: v.id, name: v.name })}
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      className="variant-delete"
+                      title={`Delete ${v.name}`}
+                      aria-label={`Delete snapshot ${v.name}`}
+                      onClick={() => {
+                        const index = d.snapshots.findIndex(
+                          (item) => item.id === v.id,
+                        );
+                        const nextFocus =
+                          d.snapshots[index + 1] || d.snapshots[index - 1];
+                        setRenaming(null);
+                        setDeletedSnapshot({ item: v, index });
+                        d.setSnapshots((q) => q.filter((p) => p.id !== v.id));
+                        if (selectedSnapshot === v.id) setSelectedSnapshot("");
+                        if (nextFocus) focusSnapshot(nextFocus.id);
+                        else
+                          requestAnimationFrame(() =>
+                            captureButton.current?.focus(),
+                          );
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </>
                 )}
               </div>
             ))}
         {bottom === "Snapshots" && !d.snapshots.length && (
           <button
-            className="add-variant"
+            className="add-variant shelf-empty-action"
             title={captureTitle}
             disabled={!canCapture}
             onClick={capture}
@@ -410,6 +620,7 @@ type PanelProps = {
   setPicker: (v: "white" | "color" | "focus" | "id" | null) => void;
   erase: boolean;
   setErase: (v: boolean) => void;
+  onPresetSelect?: (id: string) => void;
 };
 
 export function Panels(props: PanelProps) {
@@ -441,6 +652,7 @@ function PanelContent({
   setPicker,
   erase,
   setErase,
+  onPresetSelect,
 }: PanelProps) {
   const s = d.state,
     a = s.finish;
@@ -485,7 +697,8 @@ function PanelContent({
     />
   );
   if (workspace === "Batch") return <BatchPanel d={d} />;
-  if (workspace === "Presets") return <PresetPanel d={d} />;
+  if (workspace === "Presets")
+    return <PresetPanel d={d} onSelect={onPresetSelect} />;
   if (workspace === "Render Passes")
     return (
       <>
@@ -594,6 +807,7 @@ function PanelContent({
             value=""
             onChange={(e) => {
               const m = newMask(e.target.value as MaskKind);
+              m.name = uniqueVariantName(m.name, "Mask", a.masks);
               patch({ masks: [...a.masks, m], masked: true });
               setSelectedMask(m.id);
             }}
@@ -637,9 +851,15 @@ function PanelContent({
                   })
                 }
               />
-              <button onClick={() => setSelectedMask(m.id)}>{m.name}</button>
+              <button
+                aria-pressed={selectedMask === m.id}
+                onClick={() => setSelectedMask(m.id)}
+              >
+                {m.name}
+              </button>
               <button
                 title="Move mask up"
+                aria-label={`Move ${m.name} up`}
                 disabled={i === 0}
                 onClick={() => {
                   const arr = a.masks.slice();
@@ -647,11 +867,28 @@ function PanelContent({
                   patch({ masks: arr });
                 }}
               >
-                ↑
+                <ArrowUp size={13} />
+              </button>
+              <button
+                title="Move mask down"
+                aria-label={`Move ${m.name} down`}
+                disabled={i === a.masks.length - 1}
+                onClick={() => {
+                  const arr = a.masks.slice();
+                  [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                  patch({ masks: arr });
+                }}
+              >
+                <ArrowDown size={13} />
               </button>
             </div>
           ))}
         </div>
+        {!a.masks.length && (
+          <p className="mask-empty">
+            Choose a mask type with Add mask, then refine its coverage.
+          </p>
+        )}
         {mask && (
           <>
             <input
@@ -659,13 +896,52 @@ function PanelContent({
               value={mask.name}
               onChange={(e) => updateMask({ name: e.target.value })}
             />
+            <p className="mask-mode" role="status">
+              <strong>
+                {mask.kind === "brush"
+                  ? erase
+                    ? "Eraser"
+                    : "Brush"
+                  : `${mask.kind[0].toUpperCase()}${mask.kind.slice(1)} mask`}
+              </strong>
+              <span>
+                {
+                  (
+                    {
+                      rectangle:
+                        "Drag between two corners on the image. Space-drag pans.",
+                      ellipse:
+                        "Drag across the oval on the image. Space-drag pans.",
+                      brush: erase
+                        ? "Drag to erase strokes. Space-drag pans."
+                        : "Drag to paint. Alt-drag erases; Space-drag pans.",
+                      polygon:
+                        "Click each vertex on the image. The polygon closes automatically.",
+                      linear:
+                        "Drag to place the gradient on the image. Space-drag pans.",
+                      radial:
+                        "Drag to place the radial area on the image. Space-drag pans.",
+                      luminance:
+                        "Set Range low and Range high to select brightness.",
+                      color:
+                        "Pick color, then click the image. Refine with Color tolerance.",
+                      pass: "Choose a pass, then set its range or pick an ID / depth value.",
+                    } satisfies Record<MaskKind, string>
+                  )[mask.kind]
+                }
+              </span>
+            </p>
             <div className="inline-actions">
               <button
                 onClick={() => {
                   const m = {
                     ...structuredClone(mask),
                     id: crypto.randomUUID(),
-                    name: mask.name + " copy",
+                    name: uniqueVariantName(
+                      mask.name + " copy",
+                      "Mask",
+                      a.masks,
+                    ),
                   };
                   patch({ masks: [...a.masks, m] });
                   setSelectedMask(m.id);
@@ -676,8 +952,12 @@ function PanelContent({
               </button>
               <button
                 onClick={() => {
+                  const index = a.masks.findIndex(
+                    (item) => item.id === mask.id,
+                  );
+                  const next = a.masks[index + 1] || a.masks[index - 1];
                   patch({ masks: a.masks.filter((m) => m.id !== mask.id) });
-                  setSelectedMask("");
+                  setSelectedMask(next?.id || "");
                 }}
               >
                 <Trash2 size={14} />
@@ -719,10 +999,6 @@ function PanelContent({
             ))}
             {mask.kind === "polygon" && (
               <>
-                <small>
-                  Click vertices in the viewport; the polygon closes
-                  automatically.
-                </small>
                 <button onClick={() => updateMask({ points: [] })}>
                   Clear polygon
                 </button>
@@ -750,12 +1026,14 @@ function PanelContent({
                 <div className="scope-switch">
                   <button
                     className={!erase ? "active" : ""}
+                    aria-pressed={!erase}
                     onClick={() => setErase(false)}
                   >
                     Brush
                   </button>
                   <button
                     className={erase ? "active" : ""}
+                    aria-pressed={erase}
                     onClick={() => setErase(true)}
                   >
                     Eraser
@@ -865,9 +1143,6 @@ function PanelContent({
                 Pick ID / depth value
               </button>
             )}
-            <small>
-              Drag on the image to place a shape or paint. Space-drag pans.
-            </small>
           </>
         )}
         <label>
@@ -1199,9 +1474,43 @@ function PanelContent({
           </div>
         </Group>
         <Group name="Project" initial>
-          <button onClick={() => d.saveProject()}>Save Project</button>
-          <button onClick={() => d.saveProject(true)}>Save As</button>
-          <button onClick={() => d.openProject()}>Open Project</button>
+          <button
+            disabled={!isTauri() || !d.info?.path}
+            title={
+              !isTauri()
+                ? "Project files are available in the desktop app"
+                : !d.info?.path
+                  ? "Open an image from disk to save a project"
+                  : "Save project"
+            }
+            onClick={() => d.saveProject()}
+          >
+            Save Project
+          </button>
+          <button
+            disabled={!isTauri() || !d.info?.path}
+            title={
+              !isTauri()
+                ? "Project files are available in the desktop app"
+                : !d.info?.path
+                  ? "Open an image from disk to save a project"
+                  : "Save project as"
+            }
+            onClick={() => d.saveProject(true)}
+          >
+            Save As
+          </button>
+          <button
+            disabled={!isTauri()}
+            title={
+              !isTauri()
+                ? "Project files are available in the desktop app"
+                : "Open project"
+            }
+            onClick={() => d.openProject()}
+          >
+            Open Project
+          </button>
           <small>{d.projectPath || "Unsaved session"}</small>
         </Group>
       </>
@@ -1401,7 +1710,26 @@ function OutputPanel({ d }: { d: Document }) {
     </>
   );
 }
-function PresetPanel({ d }: { d: Document }) {
+function PresetPanel({
+  d,
+  onSelect,
+}: {
+  d: Document;
+  onSelect?: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [selectedName, setSelectedName] = useState("");
+  const matches = (preset: NamedState) =>
+    `${preset.name} ${preset.category || ""}`
+      .toLocaleLowerCase()
+      .includes(query.trim().toLocaleLowerCase());
+  const looks = builtin().filter(matches);
+  const saved = d.presets.filter(matches);
+  const select = (preset: NamedState) => {
+    if (!onSelect) return;
+    onSelect(preset.id);
+    setSelectedName(preset.name);
+  };
   async function load() {
     try {
       const path = await open({
@@ -1448,10 +1776,42 @@ function PresetPanel({ d }: { d: Document }) {
   return (
     <>
       <h2>Preset Library</h2>
-      <p className="muted">
-        Choose a look in the bottom strip. Apply tone, color, lens, or detail
-        separately at any strength.
-      </p>
+      <label className="preset-search">
+        Search presets
+        <input
+          type="search"
+          aria-label="Search presets"
+          placeholder="Name or category"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </label>
+      {selectedName && (
+        <p className="preset-library-status" role="status">
+          {selectedName} selected. Strength and groups are in the Presets strip.
+        </p>
+      )}
+      {!!looks.length && (
+        <>
+          <h3>Built-in looks</h3>
+          <div className="preset-library-looks">
+            {looks.map((preset) => (
+              <button
+                type="button"
+                key={preset.id}
+                className="preset-library-look"
+                aria-label={`Apply preset ${preset.name}`}
+                disabled={!d.source || !onSelect}
+                onClick={() => select(preset)}
+              >
+                <span>{preset.name}</span>
+                <span>Apply</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <h3>Saved presets</h3>
       <div className="inline-actions">
         <button disabled={!isTauri()} onClick={load}>
           Import
@@ -1460,7 +1820,7 @@ function PresetPanel({ d }: { d: Document }) {
           Export user presets
         </button>
       </div>
-      {d.presets.map((p) => (
+      {saved.map((p) => (
         <div className="preset-row" key={p.id}>
           <button
             title={p.favorite ? "Remove favorite" : "Favorite preset"}
@@ -1477,23 +1837,55 @@ function PresetPanel({ d }: { d: Document }) {
             <Star size={14} fill={p.favorite ? "currentColor" : "none"} />
           </button>
           <input
+            key={p.name}
             aria-label="Preset name"
-            value={p.name}
-            onChange={(e) =>
-              d.setPresets((v) =>
-                v.map((x) =>
-                  x.id === p.id ? { ...x, name: e.target.value } : x,
-                ),
-              )
-            }
+            defaultValue={p.name}
+            maxLength={64}
+            onBlur={(event) => {
+              const name = uniqueVariantName(
+                event.target.value,
+                "Preset",
+                d.presets.filter((item) => item.id !== p.id),
+              );
+              if (name !== p.name)
+                d.setPresets((items) =>
+                  items.map((item) =>
+                    item.id === p.id ? { ...item, name } : item,
+                  ),
+                );
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.value = p.name;
+                event.currentTarget.blur();
+              } else if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
           />
+          <button
+            type="button"
+            className="preset-apply"
+            aria-label={`Apply preset ${p.name}`}
+            disabled={!d.source || !onSelect}
+            onClick={() => select(p)}
+          >
+            Apply
+          </button>
           <button
             title="Duplicate preset"
             aria-label={`Duplicate preset ${p.name}`}
             onClick={() =>
               d.setPresets((v) => [
                 ...v,
-                { ...p, id: crypto.randomUUID(), name: p.name + " copy" },
+                {
+                  ...structuredClone(p),
+                  id: crypto.randomUUID(),
+                  name: uniqueVariantName(p.name + " copy", "Preset", v),
+                },
               ])
             }
           >
@@ -1508,6 +1900,18 @@ function PresetPanel({ d }: { d: Document }) {
           </button>
         </div>
       ))}
+      {!saved.length && (!query.trim() || looks.length > 0) && (
+        <p className="muted">
+          {query.trim()
+            ? "No saved presets match."
+            : "Save current adjustments with Save preset in the strip."}
+        </p>
+      )}
+      {!looks.length && !saved.length && query.trim() && (
+        <p className="muted" role="status">
+          No presets match “{query}”.
+        </p>
+      )}
     </>
   );
 }

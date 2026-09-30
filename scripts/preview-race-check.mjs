@@ -118,7 +118,7 @@ await page.addInitScript(() => {
 });
 await page.goto(studioUrl.href);
 const ready = () =>
-  expect(page.locator(".studio-status")).toContainText("Ready");
+  expect(page.locator(".studio-status")).toContainText("Preview ready");
 await ready();
 await expect(page.locator(".main-image")).toBeVisible();
 const tone = page.getByRole("slider", { name: "Local tone", exact: true });
@@ -152,7 +152,9 @@ await tone.fill("2");
 await expect(page.getByRole("alert")).toContainText(
   "Neural runtime unavailable",
 );
-await expect(page.locator(".classic-export button").nth(1)).toBeDisabled();
+await expect(
+  page.getByRole("button", { name: "Export to File", exact: true }),
+).toBeDisabled();
 await page
   .getByRole("button", { name: "Reset neural adjustments", exact: true })
   .click();
@@ -215,14 +217,14 @@ await page.mouse.up({ button: "middle" });
 const panned = await page.locator(".image-space").boundingBox();
 if (panned.x < enlarged.x + 60) throw Error("Pan failed");
 await page.getByRole("button", { name: "Fit", exact: true }).click();
-await page.getByLabel("Before/After mode").selectOption("vertical");
+await page.getByLabel("Comparison layout").selectOption("vertical");
 await expect(page.locator(".before-image")).toBeVisible();
 const line = await page.locator(".comparison-line").boundingBox();
 await page.mouse.move(line.x + 2, line.y + 80);
 await page.mouse.down();
 await page.mouse.move(vb.x + vb.width * 0.7, line.y + 80, { steps: 6 });
 await page.mouse.up();
-await page.getByLabel("Before/After mode").selectOption("horizontal");
+await page.getByLabel("Comparison layout").selectOption("horizontal");
 await expect(page.locator(".comparison-line.horizontal")).toBeVisible();
 await page.getByRole("checkbox", { name: "Show zoom inspector" }).uncheck();
 await expect(page.locator(".zoom-panel")).toHaveCount(0);

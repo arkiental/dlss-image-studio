@@ -30,6 +30,7 @@ import { NeuralAdjustments, QuickExport } from "./StudioClassic";
 import { RangeInput } from "./RangeInput";
 import { Scopes } from "./Scopes";
 import { Panels, SettingsPanel, Variants } from "./StudioPanels";
+import { AdjustmentSearch } from "./AdjustmentSearch";
 import { InspectorSelection } from "./InspectorSelection";
 import {
   getInspectorSelection,
@@ -80,6 +81,40 @@ export default function Studio() {
     clipCanvas = useRef<HTMLCanvasElement>(null),
     maskCanvas = useRef<HTMLCanvasElement>(null);
   const [erase, setErase] = useState(false);
+  const [presetRequest, setPresetRequest] = useState<{
+    id: string;
+    token: number;
+  } | null>(null);
+  const [zoomDraft, setZoomDraft] = useState("100");
+  const zoomEdit = useRef<{
+    view: { scale: number; x: number; y: number };
+    fit: boolean;
+  } | null>(null);
+  const sourceName =
+    d.info?.name || d.info?.path.split(/[\\/]/).pop() || "Imported image";
+  const showingOriginal = holdOriginal || compare === "original";
+  const updatingPreview = d.busy || (!d.ready && !d.error);
+  const previewState = d.editing
+    ? "Editing preview"
+    : updatingPreview
+      ? "Updating preview"
+      : d.ready
+        ? "Preview ready"
+        : "Preview unavailable";
+  const previewBadge = holdOriginal
+    ? "Original peek"
+    : compare === "original"
+      ? "Original preview · edits shown in After"
+      : updatingPreview
+        ? previewState
+        : !d.ready
+          ? "Preview unavailable"
+          : compare === "vertical" || compare === "horizontal"
+            ? "Before / After"
+            : "After";
+  useEffect(() => {
+    setZoomDraft(String(Math.round(view.scale * 100)));
+  }, [view.scale]);
   const patch = (v: Partial<Finish>) =>
     d.setState((p) => ({ ...p, finish: { ...p.finish, ...v } }));
   const mask = a.masks.find((m) => m.id === selectedMask);
@@ -328,6 +363,14 @@ export default function Studio() {
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (typing) return;
+      if (
+        e.key === " " &&
+        (e.target as HTMLElement).closest(".inspector-selection")
+      ) {
+        e.preventDefault();
+        setSpace(true);
+        return;
+      }
       if (
         (e.target as HTMLElement).closest(
           'button,input,a,summary,[role="button"],[role="slider"],[role="application"]',
@@ -682,10 +725,14 @@ export default function Studio() {
         </button>
         <button
           className="title-action"
-          title="Save project · Ctrl+S"
+          title={
+            d.info?.path
+              ? "Save project · Ctrl+S"
+              : "Open a render from disk to save a project"
+          }
           aria-label="Save Project"
           onClick={() => d.saveProject()}
-          disabled={!d.source}
+          disabled={!d.info?.path}
         >
           <Save size={18} />
           Save project
@@ -791,14 +838,48 @@ export default function Studio() {
                   type="number"
                   min={1}
                   max={1600}
-                  value={Math.round(view.scale * 100)}
-                  onChange={(e) => zoom(+e.target.value / 100)}
+                  value={zoomDraft}
+                  onFocus={() => {
+                    zoomEdit.current = {
+                      view: { ...view },
+                      fit: fitMode.current,
+                    };
+                  }}
+                  onChange={(e) => {
+                    setZoomDraft(e.target.value);
+                    if (Number.isFinite(e.target.valueAsNumber))
+                      zoom(e.target.valueAsNumber / 100);
+                  }}
+                  onBlur={() => {
+                    if (!zoomEdit.current) return;
+                    zoomEdit.current = null;
+                    setZoomDraft(String(Math.round(view.scale * 100)));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const start = zoomEdit.current;
+                      if (start) {
+                        fitMode.current = start.fit;
+                        setView(start.view);
+                        setZoomDraft(
+                          String(Math.round(start.view.scale * 100)),
+                        );
+                      }
+                      zoomEdit.current = null;
+                      e.currentTarget.blur();
+                    }
+                  }}
                 />
                 <span>%</span>
                 <select
                   aria-label="Zoom presets"
                   value=""
-                  onChange={(e) => zoom(+e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value) zoom(+e.target.value);
+                  }}
                 >
                   <option value="">Presets</option>
                   {[0.25, 0.5, 1, 2].map((v) => (
@@ -820,17 +901,51 @@ export default function Studio() {
                   Fill
                 </button>
                 <span className="view-divider" />
-                <select
-                  aria-label="Before/After mode"
-                  title="B toggles original; hold backslash to peek"
-                  value={compare}
-                  onChange={(e) => setCompare(e.target.value)}
+                <div
+                  className="compare-controls"
+                  role="group"
+                  aria-label="Preview mode"
                 >
-                  <option value="processed">After</option>
-                  <option value="original">Before</option>
+                  <button
+                    type="button"
+                    aria-pressed={compare === "original" && !holdOriginal}
+                    title="Show original · B toggles Before / After"
+                    onClick={() => setCompare("original")}
+                  >
+                    Before
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={compare === "processed" && !holdOriginal}
+                    title="Show edited preview · hold backslash to peek at original"
+                    onClick={() => setCompare("processed")}
+                  >
+                    After
+                  </button>
+                </div>
+                <select
+                  className="comparison-layout"
+                  aria-label="Comparison layout"
+                  value={
+                    compare === "vertical" || compare === "horizontal"
+                      ? compare
+                      : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value) setCompare(e.target.value);
+                  }}
+                >
+                  <option value="">Split view</option>
                   <option value="vertical">Split vertical</option>
                   <option value="horizontal">Split horizontal</option>
                 </select>
+                <span
+                  className="preview-state"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {previewState}
+                </span>
                 <button
                   title="Hide UI · P"
                   aria-label="Presentation mode"
@@ -957,6 +1072,13 @@ export default function Studio() {
                 {(compare === "original" || holdOriginal) && (
                   <span className="comparison-label before">Original</span>
                 )}
+                <span
+                  className={`preview-badge ${showingOriginal ? "original" : updatingPreview ? "working" : ""}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {previewBadge}
+                </span>
                 {hidden && (
                   <button
                     className="exit-presentation"
@@ -1077,16 +1199,29 @@ export default function Studio() {
               onMasks={() => setWorkspace("Masks")}
               setSelectedMask={setSelectedMask}
             />
-            <Variants d={d} bottom={bottom} setBottom={setBottom} />
+            <Variants
+              d={d}
+              bottom={bottom}
+              setBottom={setBottom}
+              presetRequest={presetRequest}
+            />
           </div>
           <aside className="pro-inspector">
             <nav className="nav-rail">
-              <span className="inspector-label">Inspector</span>
+              <div className="document-identity">
+                <span
+                  className="document-name"
+                  title={d.info?.path || sourceName}
+                >
+                  {sourceName}
+                </span>
+                <span className="document-state">{previewState}</span>
+              </div>
               <div className="rail-spacer" />
               <button
                 title="Undo · Ctrl+Z"
                 aria-label="Undo"
-                disabled={d.cursor < 0}
+                disabled={!d.canUndo}
                 onClick={d.undo}
               >
                 <Undo2 size={19} />
@@ -1094,7 +1229,7 @@ export default function Studio() {
               <button
                 title="Redo · Ctrl+Shift+Z"
                 aria-label="Redo"
-                disabled={d.cursor >= d.history.length - 1}
+                disabled={!d.canRedo}
                 onClick={d.redo}
               >
                 <Redo2 size={19} />
@@ -1147,6 +1282,12 @@ export default function Studio() {
                 </button>
               ))}
             </div>
+            <AdjustmentSearch
+              onNavigate={(entry) => {
+                if (entry.workspace) setWorkspace(entry.workspace);
+                else setTab(entry.tab);
+              }}
+            />
             <div
               className="inspector-content"
               id="inspector-panel"
@@ -1167,23 +1308,21 @@ export default function Studio() {
                 setPicker={setPicker}
                 erase={erase}
                 setErase={setErase}
+                onPresetSelect={(id) => {
+                  setBottom("Presets");
+                  setPresetRequest({ id, token: Date.now() });
+                }}
               />
             </div>
-            <QuickExport d={d} />
+            <QuickExport d={d} onSettings={() => setTab("Export")} />
           </aside>
         </div>
       )}
       <footer className="studio-status">
-        <span className={d.busy ? "working" : "ready"}>●</span>
-        <span>
-          {d.busy
-            ? "Processing Preview…"
-            : d.source
-              ? d.ready
-                ? "Ready"
-                : "Preview unavailable"
-              : "Ready"}
+        <span className={d.source && updatingPreview ? "working" : "ready"}>
+          ●
         </span>
+        <span>{d.source ? previewState : "Ready"}</span>
         {d.info && (
           <>
             <span>

@@ -146,6 +146,29 @@
   height: 36px;
   font-size: 13px;
 }
+.studio .neural-options {
+  margin: 0 0 14px;
+}
+.studio .neural-options > summary {
+  display: list-item;
+  min-height: 32px;
+  margin-left: 14px;
+  padding: 6px 0;
+  color: var(--text);
+  font-size: 12px;
+}
+.neural-options > summary::marker {
+  color: var(--muted);
+  font-size: 10px;
+}
+.neural-options > summary > span:last-child {
+  float: right;
+  color: var(--muted);
+  font-size: 11px;
+}
+.neural-options[open] > summary {
+  margin-bottom: 10px;
+}
 .studio button.active {
   background: #151515;
   border-color: #fff;
@@ -262,6 +285,36 @@
   border: 1px solid var(--border);
   padding: 14px 16px 16px;
 }
+.neural-adjustments.neural-inactive {
+  padding: 10px 14px;
+}
+.neural-adjustments.neural-inactive > header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.neural-status {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.neural-adjustments > .neural-status {
+  margin: 6px 0 0;
+}
+.studio .neural-controls-toggle {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.neural-controls-toggle[aria-expanded="false"] > svg {
+  transform: rotate(-90deg);
+}
+.neural-controls {
+  margin-top: 10px;
+}
+.neural-inactive .neural-controls {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
 .neural-adjustments header {
   display: flex;
   gap: 10px;
@@ -345,6 +398,49 @@
   width: 22px;
   height: 22px;
 }
+.classic-export.compact-export {
+  padding: 8px 10px;
+}
+.compact-export > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.compact-export > header h2 {
+  margin: 0;
+  font-size: 13px;
+}
+.compact-export h2::after {
+  display: none;
+}
+.studio .compact-export .export-summary {
+  flex-direction: row;
+  gap: 5px;
+  min-height: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.compact-export > div {
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  gap: 6px;
+}
+.studio .compact-export > div > button {
+  flex-direction: row;
+  height: 32px;
+  min-height: 32px;
+  gap: 6px;
+  padding: 5px 6px;
+  font-size: 11px;
+}
+.compact-export button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
 .pro-group {
   border-color: var(--border);
   border-radius: 0;
@@ -376,6 +472,23 @@
   min-height: 128px;
   max-height: 158px;
   flex-shrink: 0;
+}
+.variant-shelf.shelf-empty {
+  min-height: 0;
+  max-height: none;
+}
+.shelf-empty .variant-strip {
+  padding: 4px 8px;
+}
+.studio .shelf-empty .shelf-empty-action {
+  min-height: 32px;
+  padding: 4px 8px;
+  gap: 6px;
+  font-size: 11px;
+}
+.variant-shelf:not(.shelf-empty):has(.shelf-feedback) {
+  min-height: 150px;
+  max-height: 196px;
 }
 .shelf-toolbar {
   border-color: var(--border);
