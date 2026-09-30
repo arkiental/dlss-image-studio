@@ -18,6 +18,7 @@ import {
   Plus,
 } from "lucide-react";
 import { QuickLook } from "./StudioClassic";
+import { WorkspaceSection } from "./WorkspaceSection";
 import { Control, Group, CurveEditor, ColorWheel } from "./StudioControls";
 import { useStudio, imageUrl } from "./useStudio";
 import { defaults, type StudioState } from "./state";
@@ -241,13 +242,13 @@ export function Variants({
             }}
           />
           <button
+            className="snapshot-action"
             title={captureTitle}
             aria-label="Create snapshot"
             disabled={!canCapture}
             onClick={capture}
           >
             <Camera size={17} />
-            <span>Create snapshot</span>
           </button>
           <button
             title="Save preset"
@@ -395,21 +396,7 @@ export function Variants({
     </section>
   );
 }
-export function Panels({
-  d,
-  workspace,
-  setWorkspace,
-  tab,
-  selectedMask,
-  setSelectedMask,
-  maskOverlay,
-  setMaskOverlay,
-  overlayOpacity,
-  setOverlayOpacity,
-  setPicker,
-  erase,
-  setErase,
-}: {
+type PanelProps = {
   d: Document;
   workspace: string;
   setWorkspace: (v: string) => void;
@@ -423,7 +410,38 @@ export function Panels({
   setPicker: (v: "white" | "color" | "focus" | "id" | null) => void;
   erase: boolean;
   setErase: (v: boolean) => void;
-}) {
+};
+
+export function Panels(props: PanelProps) {
+  if (props.tab !== "Workspace")
+    return <PanelContent {...props} workspace="Adjust" />;
+  const workspace = ["Masks", "Render Passes", "Presets", "Batch"].includes(
+    props.workspace,
+  )
+    ? props.workspace
+    : "Masks";
+  return (
+    <WorkspaceSection workspace={workspace} onSelect={props.setWorkspace}>
+      <PanelContent {...props} workspace={workspace} />
+    </WorkspaceSection>
+  );
+}
+
+function PanelContent({
+  d,
+  workspace,
+  setWorkspace,
+  tab,
+  selectedMask,
+  setSelectedMask,
+  maskOverlay,
+  setMaskOverlay,
+  overlayOpacity,
+  setOverlayOpacity,
+  setPicker,
+  erase,
+  setErase,
+}: PanelProps) {
   const s = d.state,
     a = s.finish;
   const patch = (v: Partial<Finish>) =>

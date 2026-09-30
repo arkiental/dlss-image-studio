@@ -2,19 +2,19 @@
   font-family: "Segoe UI", Arial, sans-serif;
   font-size: 13px;
   line-height: 1.4;
-  color: #ededed;
+  color: #f5f5f5;
   background: #000;
   font-synthesis: none;
   color-scheme: dark;
-  --text: #ededed;
-  --surface: #111;
-  --surface-raised: #191919;
-  --field: #0b0b0b;
-  --gold: #ddd;
-  --border: #363636;
-  --control-border: #696969;
-  --muted: #aaa;
-  --accent: #ddd;
+  --text: #f5f5f5;
+  --surface: #070707;
+  --surface-raised: #0d0d0d;
+  --field: #000;
+  --gold: #eee;
+  --border: #606060;
+  --control-border: #888;
+  --muted: #bebebe;
+  --accent: #eee;
 }
 * {
   box-sizing: border-box;
@@ -34,14 +34,14 @@ button {
   cursor: pointer;
   background: var(--surface-raised);
   border: 1px solid var(--control-border);
-  border-radius: 4px;
+  border-radius: 0;
   transition:
     background-color 100ms,
     border-color 100ms;
 }
 button:hover {
-  background: #2c2c2c;
-  border-color: #999;
+  background: #171717;
+  border-color: #ccc;
 }
 button:focus-visible,
 input:focus-visible,
@@ -104,7 +104,7 @@ main {
 .drag-title span {
   font-size: 12px;
   letter-spacing: 3px;
-  color: #bababa;
+  color: var(--muted);
   border-left: 1px solid #444;
   padding: 6px 0 6px 22px;
 }
@@ -118,7 +118,7 @@ main {
 }
 .titlebar .settings-button {
   border-color: var(--border);
-  background: #1a1b1b;
+  background: var(--surface-raised);
   margin-right: 6px;
 }
 .workspace {
@@ -138,7 +138,7 @@ main {
 .local-panel,
 .right-panel {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface);
   overflow: hidden;
 }
@@ -158,7 +158,7 @@ main {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 4px;
+  border-radius: 0;
   object-fit: contain;
 }
 .guides {
@@ -201,11 +201,12 @@ main {
 }
 .zoom-panel {
   position: absolute;
-  width: 306px;
-  height: 255px;
-  background: #111;
-  border: 4px solid #111;
-  border-radius: 6px;
+  width: 308px;
+  height: 247px;
+  background: #000;
+  border: 4px solid #000;
+  outline: 1px solid var(--control-border);
+  border-radius: 0;
   overflow: hidden;
   box-shadow: 0 3px 10px #0008;
   touch-action: none;
@@ -228,10 +229,10 @@ main {
 }
 .zoom-panel canvas {
   display: block;
-  width: 298px;
-  height: 210px;
-  object-fit: cover;
-  border-radius: 6px;
+  width: 300px;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 0;
 }
 .local-panel {
   padding: 18px 26px 20px;
@@ -262,8 +263,8 @@ main {
 .control {
   padding: 12px 16px 14px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #141414;
+  border-radius: 0;
+  background: var(--surface);
   min-width: 0;
 }
 .control-label {
@@ -287,7 +288,7 @@ main {
   border: 1px solid var(--control-border);
   background: var(--field);
   text-align: center;
-  border-radius: 5px;
+  border-radius: 0;
   font-size: 16px;
   padding: 0;
   -moz-appearance: textfield;
@@ -305,13 +306,13 @@ input::-webkit-outer-spin-button {
   appearance: none;
   width: 100%;
   height: 6px;
-  border-radius: 4px;
+  border-radius: 0;
   background: linear-gradient(
     to right,
     var(--accent) 0%,
     var(--accent) var(--fill),
-    #555 var(--fill),
-    #555 100%
+    #777 var(--fill),
+    #777 100%
   );
   display: block;
   margin: 17px 0 15px;
@@ -321,7 +322,7 @@ input::-webkit-outer-spin-button {
   appearance: none;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
+  border-radius: 0;
   background: #eee;
   border: 1px solid #111;
 }
@@ -329,7 +330,7 @@ input::-webkit-outer-spin-button {
   width: 18px;
   height: 18px;
   border: 1px solid #111;
-  border-radius: 50%;
+  border-radius: 0;
   background: #eee;
 }
 .ticks {
@@ -404,7 +405,7 @@ input::-webkit-outer-spin-button {
   font-size: 16px;
 }
 .styles button.selected {
-  background: #303030;
+  background: #151515;
   border-color: #ddd;
 }
 .resolution {
@@ -428,7 +429,7 @@ input::-webkit-outer-spin-button {
   align-items: center;
   height: 35px;
   border: 1px solid var(--control-border);
-  border-radius: 5px;
+  border-radius: 0;
   padding-right: 8px;
   background: var(--field);
 }
@@ -529,9 +530,9 @@ input::-webkit-outer-spin-button {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: #202020;
+  background: var(--surface-raised);
   border: 1px solid #777;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 12px 16px;
   display: flex;
   gap: 20px;
@@ -557,9 +558,9 @@ input::-webkit-outer-spin-button {
   width: min(680px, calc(100vw - 40px));
   max-height: calc(100dvh - 40px);
   overflow: auto;
-  border: 1px solid #666;
-  border-radius: 6px;
-  background: #161616;
+  border: 1px solid var(--control-border);
+  border-radius: 0;
+  background: var(--surface-raised);
   padding: 20px;
   box-shadow: 0 20px 80px #0008;
 }
@@ -570,7 +571,7 @@ input::-webkit-outer-spin-button {
   font-size: 12px;
 }
 .settings-dialog dt {
-  color: #aaa;
+  color: var(--muted);
 }
 .settings-dialog dd {
   margin: 0;
@@ -583,7 +584,7 @@ input::-webkit-outer-spin-button {
 .settings-dialog .notice {
   border-left: 2px solid var(--gold);
   padding: 8px 15px;
-  background: #222;
+  background: #151515;
 }
 .settings-dialog small {
   color: var(--muted);
@@ -666,8 +667,8 @@ input::-webkit-outer-spin-button {
   min-width: 22px;
   padding: 1px 5px;
   border: 1px solid var(--control-border);
-  border-radius: 3px;
-  background: #202020;
+  border-radius: 0;
+  background: #070707;
   color: var(--text);
   font: inherit;
   line-height: 18px;
@@ -773,7 +774,7 @@ input::-webkit-outer-spin-button {
   padding: 6px 9px;
 }
 .scope-switch button[aria-pressed="true"] {
-  background: #303030;
+  background: #151515;
   border-color: var(--gold);
 }
 .adjustment-hint {
@@ -832,7 +833,7 @@ input::-webkit-outer-spin-button {
   background: var(--field);
   border: 1px solid var(--control-border);
   padding: 4px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .neural-toolbar input {
   accent-color: var(--gold);
@@ -883,8 +884,8 @@ select:disabled {
   gap: 14px;
   padding: 0 16px;
   border: 1px solid var(--border);
-  border-radius: 7px;
-  background: #191919;
+  border-radius: 0;
+  background: var(--surface-raised);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -911,7 +912,7 @@ select:disabled {
   text-align: center;
   padding: 7px 8px;
   border: 1px solid var(--control-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--field);
   font-variant-numeric: tabular-nums;
 }
@@ -950,8 +951,8 @@ select:disabled {
 .inspector-switch span {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  background: #333;
+  border-radius: 0;
+  background: #111;
   border: 1px solid #888;
 }
 .inspector-switch span::after {
@@ -961,7 +962,7 @@ select:disabled {
   left: 2px;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: 0;
   background: #eee;
   transition: transform 120ms;
 }

@@ -1,5 +1,11 @@
 import { chromium, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
+const studioUrl = new URL(process.env.STUDIO_URL || "http://127.0.0.1:1420");
+studioUrl.searchParams.set("demo", "1");
+const evidenceDir = resolve(process.env.EVIDENCE_DIR || "docs/screenshots");
+await mkdir(evidenceDir, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
     process.env.BROWSER_EXE ||
@@ -12,11 +18,13 @@ const page = await browser.newPage({
 });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-await page.goto("http://127.0.0.1:1420/?demo=1");
+await page.goto(studioUrl.href);
 const ready = async () => {
   await expect(page.getByText("Loading LUT�", { exact: true })).toHaveCount(0);
   // Hosted Windows runners use the CPU browser fallback, including after reload.
-  await expect(page.locator(".studio-status")).toContainText("Ready", { timeout: 30000 });
+  await expect(page.locator(".studio-status")).toContainText("Ready", {
+    timeout: 30000,
+  });
 };
 await ready();
 await page.getByRole("checkbox", { name: "Show zoom inspector" }).uncheck();
@@ -34,7 +42,7 @@ const pixels = () =>
       ).join(","),
     );
 const original = await pixels();
-await page.getByRole("button", { name: "Refine", exact: true }).click();
+await page.getByRole("tab", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "LUTs", exact: true }).click();
 await expect(
   page.getByLabel("LUT preset").locator("optgroup option"),
@@ -65,25 +73,21 @@ await ready();
 const fixture = JSON.parse(
   readFileSync("tests/fixtures/lut-conformance.json", "utf8"),
 );
-await page
-  .getByLabel("Import CUBE LUT")
-  .setInputFiles({
-    name: "Channel Grade.cube",
-    mimeType: "text/plain",
-    buffer: Buffer.from(fixture.cube),
-  });
+await page.getByLabel("Import CUBE LUT").setInputFiles({
+  name: "Channel Grade.cube",
+  mimeType: "text/plain",
+  buffer: Buffer.from(fixture.cube),
+});
 await expect(
   page.getByLabel("LUT preset").locator("option:checked"),
 ).toHaveText("Channel Grade");
 await ready();
 const custom = await pixels();
-await page
-  .getByLabel("Import CUBE LUT")
-  .setInputFiles({
-    name: "Broken.cube",
-    mimeType: "text/plain",
-    buffer: Buffer.from("LUT_3D_SIZE 2\n0 0 0"),
-  });
+await page.getByLabel("Import CUBE LUT").setInputFiles({
+  name: "Broken.cube",
+  mimeType: "text/plain",
+  buffer: Buffer.from("LUT_3D_SIZE 2\n0 0 0"),
+});
 await expect(page.getByRole("alert")).toContainText("row count");
 await expect(
   page.getByLabel("LUT preset").locator("option:checked"),
@@ -136,7 +140,7 @@ await page
   .fill("65");
 await ready();
 await page.getByLabel("Before/After mode").selectOption("vertical");
-await page.screenshot({ path: "docs/screenshots/studio-luts.png" });
+await page.screenshot({ path: resolve(evidenceDir, "studio-luts.png") });
 // Imported LUTs persist across application reloads. Embedded assets restore without the original file.
 const portability = await page.evaluate(async () => {
   const library = await import("/src/lutLibrary.ts");
@@ -174,7 +178,7 @@ expect(portability.count).toBe(1);
 expect(portability.restored).toBe(true);
 await page.reload();
 await ready();
-await page.getByRole("button", { name: "Refine", exact: true }).click();
+await page.getByRole("tab", { name: "Refine", exact: true }).click();
 if (
   (await page
     .getByRole("button", { name: "LUTs", exact: true })

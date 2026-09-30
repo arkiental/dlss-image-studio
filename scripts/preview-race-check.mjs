@@ -13,10 +13,8 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1536, height: 1024 } }),
   errors = [];
 const selectWorkspace = async (name) => {
-  await page
-    .getByRole("button", { name: "Workspace panels", exact: true })
-    .click();
-  await page.getByRole("menuitemradio", { name, exact: true }).click();
+  await page.getByRole("tab", { name: "Workspace", exact: true }).click();
+  await page.getByRole("tab", { name, exact: true }).click();
 };
 page.on("pageerror", (e) => errors.push(e.message));
 await page.addInitScript(() => {
@@ -185,7 +183,7 @@ if (
   throw Error(
     "Interactive preview did not refine to full resolution on release",
   );
-await page.getByRole("button", { name: "Refine", exact: true }).click();
+await page.getByRole("tab", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 const exposure = page.getByRole("slider", { name: "Exposure", exact: true });
 await exposure.fill("1");
@@ -285,7 +283,7 @@ if (
   throw Error("Project save dropped session data");
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1.5");
 await ready();
-await page.getByRole("button", { name: "Tools", exact: true }).click();
+await page.getByRole("tab", { name: "Tools", exact: true }).click();
 if (
   (await page
     .getByRole("button", { name: "Project", exact: true })
@@ -295,7 +293,7 @@ if (
 await page.evaluate(() => window.dialogPaths.push("D:/tests/session.dlssproj"));
 await page.getByRole("button", { name: "Open Project", exact: true }).click();
 await ready();
-await page.getByRole("button", { name: "Refine", exact: true }).last().click();
+await page.getByRole("tab", { name: "Refine", exact: true }).last().click();
 if (
   (await page
     .getByRole("button", { name: "Tone", exact: true })
@@ -314,7 +312,7 @@ expect(restoredRequest.state.finish.lutId).toBe(saved.luts[0].id);
 await selectWorkspace("Batch");
 await page.evaluate(() => window.dialogPaths.push(["D:/a.png", "D:/b.png"]));
 await page.getByRole("button", { name: "Add renders", exact: true }).click();
-await page.getByRole("button", { name: "Adjust", exact: true }).click();
+await page.getByRole("tab", { name: "Adjust", exact: true }).click();
 await selectWorkspace("Batch");
 await expect(page.locator(".batch-list>div")).toHaveCount(2);
 await page.evaluate(() => window.dialogPaths.push("D:/outputs"));
@@ -322,11 +320,11 @@ await page
   .getByRole("button", { name: "Choose output folder", exact: true })
   .click();
 await page.getByRole("button", { name: "Process all", exact: true }).click();
-await page.getByRole("button", { name: "Adjust", exact: true }).click();
+await page.getByRole("tab", { name: "Adjust", exact: true }).click();
 await page.waitForTimeout(250);
 await selectWorkspace("Batch");
 await expect(page.getByText("2 / 2 complete")).toBeVisible();
-await page.getByRole("button", { name: "Export", exact: true }).first().click();
+await page.getByRole("tab", { name: "Export", exact: true }).first().click();
 await ready();
 await page
   .getByRole("button", { name: "Copy to Clipboard", exact: true })

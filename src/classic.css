@@ -13,7 +13,7 @@
 }
 .studio button {
   font-size: 12px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .studio .titlebar .title-action {
   display: inline-flex;
@@ -27,8 +27,8 @@
   background: var(--surface-raised);
 }
 .studio .titlebar .title-action:hover:not(:disabled) {
-  background: #2c2c2c;
-  border-color: #999;
+  background: #171717;
+  border-color: #ccc;
 }
 .studio .titlebar .settings-button {
   margin-right: 0;
@@ -53,7 +53,7 @@
 .neural-adjustments {
   background: var(--surface);
   border-color: var(--border);
-  border-radius: 6px;
+  border-radius: 0;
 }
 .center-workspace {
   gap: 10px;
@@ -71,7 +71,7 @@
 }
 .pro-view-toolbar {
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 0;
   height: 48px;
   margin: 0 0 8px;
   gap: 8px;
@@ -122,12 +122,17 @@
   width: 15px;
 }
 .inspector-tabs {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.2fr) repeat(
+      2,
+      minmax(0, 1fr)
+    );
   padding: 8px;
   border-color: var(--border);
 }
 .inspector-tabs button {
-  padding: 7px 2px;
+  min-width: 0;
+  padding: 7px 1px;
+  font-size: 11px;
 }
 .inspector-content {
   padding: 12px;
@@ -142,8 +147,8 @@
   font-size: 13px;
 }
 .studio button.active {
-  background: #303030;
-  border-color: #aaa;
+  background: #151515;
+  border-color: #fff;
   color: #fff;
   box-shadow: none;
 }
@@ -165,8 +170,8 @@
   gap: 4px 8px;
   padding: 10px 12px 12px;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: #151515;
+  border-radius: 0;
+  background: var(--surface);
   min-height: 88px;
 }
 .classic-control label {
@@ -342,7 +347,7 @@
 }
 .pro-group {
   border-color: var(--border);
-  border-radius: 4px;
+  border-radius: 0;
 }
 .pro-group > header {
   background: var(--surface-raised);
@@ -358,7 +363,7 @@
   grid-template-columns: 110px minmax(45px, 1fr) 52px;
   min-height: 46px;
   font-size: 13px;
-  border-color: #292929;
+  border-color: #444;
 }
 .group-content {
   padding: 8px 12px 12px;
@@ -381,6 +386,13 @@
 }
 .shelf-actions button {
   font-size: 12px;
+}
+.studio .shelf-actions .snapshot-action {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 0;
 }
 .variant span {
   font-size: 12px;
@@ -555,7 +567,7 @@
 .neural-input-mode button {
   padding: 6px 12px;
   border: 1px solid var(--control-border);
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--surface-raised);
   color: var(--text);
   cursor: pointer;

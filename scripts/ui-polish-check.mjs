@@ -1,6 +1,7 @@
 import { chromium, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { checkInspectorSelection } from "./inspector-selection-check.mjs";
 
 const studioUrl = new URL(process.env.STUDIO_URL || "http://127.0.0.1:1426");
 studioUrl.searchParams.set("demo", "1");
@@ -102,7 +103,15 @@ try {
     name: "Save preset",
     exact: true,
   });
-  await expect(snapshot).toContainText(/snapshot/i);
+  await ready();
+  await expect(snapshot).toBeEnabled({ timeout: 30000 });
+  await expect(snapshot).toHaveAttribute("title", "Create snapshot");
+  await expect(snapshot.locator("svg")).toBeVisible();
+  await expect(snapshot).toHaveText("");
+  const snapshotSize = await snapshot.boundingBox();
+  expect(
+    Math.abs(snapshotSize.width - snapshotSize.height),
+  ).toBeLessThanOrEqual(1);
   await expect(savePreset).toContainText(/preset/i);
   await page
     .getByLabel("Variant name", { exact: true })
@@ -142,78 +151,81 @@ try {
     persistedPresets.some((preset) => preset.name === "Review preset"),
   ).toBe(true);
   checks.push(
-    "Visible snapshot/preset actions; named snapshot capture, restore and delete; preset feedback and local persistence",
+    "Square camera snapshot action has title and accessible label; named capture, restore and delete; visible preset action, feedback and local persistence",
   );
 
-  const panels = page.getByRole("button", {
-    name: "Workspace panels",
+  const inspectorTabs = page.getByRole("tablist", {
+    name: "Inspector sections",
     exact: true,
   });
-  const panelMenu = page.getByRole("menu", { name: "Workspace panels" });
+  const workspacePeer = inspectorTabs.getByRole("tab", {
+    name: "Workspace",
+    exact: true,
+  });
+  const workspaceTabs = page.getByRole("tablist", {
+    name: "Workspace sections",
+    exact: true,
+  });
   const panelNames = ["Masks", "Passes", "Presets", "Batch"];
-  const menuItem = (name) =>
-    panelMenu.getByRole("menuitemradio", { name, exact: true });
-  await expect(panels).toHaveText(/Panels/);
-  await expect(panels).toHaveAttribute("aria-haspopup", "menu");
-  for (const method of ["click", "Enter", "Space", "ArrowDown"]) {
-    await panels.focus();
-    if (method === "click") await panels.click();
-    else await panels.press(method);
-    await expect(panelMenu).toBeVisible();
-    await expect(panels).toHaveAttribute("aria-expanded", "true");
-    await expect(panelMenu.getByRole("menuitemradio")).toHaveCount(4);
-    await expect(menuItem("Masks")).toBeFocused();
-    await page.keyboard.press("Escape");
-    await expect(panelMenu).toHaveCount(0);
-    await expect(panels).toBeFocused();
-    await expect(panels).toHaveAttribute("aria-expanded", "false");
+  const workspaceTab = (name) =>
+    workspaceTabs.getByRole("tab", { name, exact: true });
+  await expect(inspectorTabs.getByRole("tab")).toHaveText([
+    "Adjust",
+    "Refine",
+    "Effects",
+    "Workspace",
+    "Tools",
+    "Export",
+  ]);
+  for (const method of ["click", "Enter", "Space"]) {
+    await inspectorTabs
+      .getByRole("tab", { name: "Adjust", exact: true })
+      .click();
+    await workspacePeer.focus();
+    if (method === "click") await workspacePeer.click();
+    else await workspacePeer.press(method);
+    await expect(workspacePeer).toHaveAttribute("aria-selected", "true");
+    await expect(workspaceTabs).toBeVisible();
+    await expect(workspaceTabs.getByRole("tab")).toHaveText(panelNames);
+    for (const name of panelNames)
+      await expect(workspaceTab(name)).toBeVisible();
   }
-  await panels.press("ArrowDown");
+  await workspacePeer.press("Tab");
+  await expect(workspaceTab("Masks")).toBeFocused();
   for (const name of ["Passes", "Presets", "Batch", "Masks"]) {
-    await page.keyboard.press("ArrowDown");
-    await expect(menuItem(name)).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(workspaceTab(name)).toBeFocused();
+    await expect(workspaceTab(name)).toHaveAttribute("aria-selected", "true");
   }
-  await page.keyboard.press("ArrowUp");
-  await expect(menuItem("Batch")).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(workspaceTab("Batch")).toBeFocused();
   await page.keyboard.press("Home");
-  await expect(menuItem("Masks")).toBeFocused();
+  await expect(workspaceTab("Masks")).toBeFocused();
   await page.keyboard.press("End");
-  await expect(menuItem("Batch")).toBeFocused();
-  await page.keyboard.press("p");
-  await expect(panelMenu).toBeVisible();
-  await expect(page.locator(".studio")).not.toHaveClass(/presentation/);
-  await page.keyboard.press("Escape");
-  await panels.click();
-  await panels.click();
-  await expect(panelMenu).toHaveCount(0);
-  await expect(panels).toBeFocused();
-  await panels.click();
-  await contrastValue.click();
-  await expect(panelMenu).toHaveCount(0);
-  await expect(contrastValue).toBeFocused();
-  await panels.click();
-  await page.keyboard.press("Tab");
-  await expect(panelMenu).toHaveCount(0);
-  await expect(panels).not.toBeFocused();
-  await expect(page.locator(".studio")).not.toHaveClass(/presentation/);
-  await panels.click();
-  await page.keyboard.press("Shift+Tab");
-  await expect(panelMenu).toHaveCount(0);
-  await expect(panels).toBeFocused();
+  await expect(workspaceTab("Batch")).toBeFocused();
+  await workspacePeer.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    inspectorTabs.getByRole("tab", { name: "Tools", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(workspacePeer).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(
+    inspectorTabs.getByRole("tab", { name: "Adjust", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(
+    inspectorTabs.getByRole("tab", { name: "Export", exact: true }),
+  ).toBeFocused();
+  await workspacePeer.click();
   checks.push(
-    "Panels menu opens by mouse/Enter/Space/ArrowDown; roving arrows wrap, Home/End, Escape returns focus, trigger toggles closed, global shortcuts stay idle, outside click retains target focus and Tab/Shift+Tab dismiss normally",
+    "Workspace is a peer inspector tab; four visible sub-tabs remain available, Enter/Space activate, native Tab enters the selected child, arrows wrap and activate, and Home/End work at both tab levels",
   );
 
-  for (const [index, name] of panelNames.entries()) {
-    await panels.click();
-    await page.keyboard.press("Home");
-    for (let step = 0; step < index; step++)
-      await page.keyboard.press("ArrowDown");
-    await expect(menuItem(name)).toBeFocused();
-    if (name === "Presets") await menuItem(name).click();
-    else await page.keyboard.press(name === "Passes" ? "Space" : "Enter");
-    await expect(panelMenu).toHaveCount(0);
-    await expect(panels).toBeFocused();
+  for (const name of panelNames) {
+    await workspaceTab(name).click();
+    await expect(workspaceTab(name)).toHaveAttribute("aria-selected", "true");
     const heading = {
       Masks: "Masks",
       Passes: "Render Passes",
@@ -225,9 +237,6 @@ try {
         .locator(".inspector-content")
         .getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
-    await panels.click();
-    await expect(menuItem(name)).toHaveAttribute("aria-checked", "true");
-    await page.keyboard.press("Escape");
     if (name === "Masks") {
       await page.getByLabel("Add mask").selectOption("ellipse");
       await page
@@ -260,9 +269,9 @@ try {
       ).toBeDisabled();
     }
   }
-  await page.getByRole("button", { name: "Adjust", exact: true }).click();
+  await inspectorTabs.getByRole("tab", { name: "Adjust", exact: true }).click();
   checks.push(
-    "All four Panels selections activate the correct workspace and checked state; mask edits, pass choices, preset rename and browser-safe batch controls work",
+    "All four Workspace sections activate the correct panel and selected state; mask edits, pass choices, preset rename and browser-safe batch controls work",
   );
 
   const settings = page.getByRole("button", { name: "Settings", exact: true });
@@ -345,12 +354,12 @@ try {
         titlebar.y + titlebar.height + 1,
       );
     }
-    const rail = await page.locator(".nav-rail").boundingBox();
-    for (const action of await page.locator(".nav-rail button").all()) {
-      const actionBounds = await action.boundingBox();
-      expect(actionBounds.x).toBeGreaterThanOrEqual(rail.x - 1);
-      expect(actionBounds.x + actionBounds.width).toBeLessThanOrEqual(
-        rail.x + rail.width + 1,
+    const inspectorTabBounds = await inspectorTabs.boundingBox();
+    for (const action of await inspectorTabs.getByRole("tab").all()) {
+      const bounds = await action.boundingBox();
+      expect(bounds.x).toBeGreaterThanOrEqual(inspectorTabBounds.x - 1);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(
+        inspectorTabBounds.x + inspectorTabBounds.width + 1,
       );
     }
     const inspector = await page.locator(".inspector-content").boundingBox();
@@ -387,14 +396,12 @@ try {
         }),
       ).toBe(true);
     }
-    await panels.click();
-    await expect(panelMenu).toBeVisible();
-    const menuBounds = await panelMenu.boundingBox();
-    expect(menuBounds.x).toBeGreaterThanOrEqual(0);
-    expect(menuBounds.y).toBeGreaterThanOrEqual(0);
-    expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(width);
-    expect(menuBounds.y + menuBounds.height).toBeLessThanOrEqual(height);
-    for (const item of await panelMenu.getByRole("menuitemradio").all()) {
+    await workspacePeer.click();
+    await expect(workspaceTabs).toBeVisible();
+    const subtabBounds = await workspaceTabs.boundingBox();
+    expect(subtabBounds.x).toBeGreaterThanOrEqual(0);
+    expect(subtabBounds.x + subtabBounds.width).toBeLessThanOrEqual(width);
+    for (const item of await workspaceTabs.getByRole("tab").all()) {
       expect(
         await item.evaluate((element) => {
           const bounds = element.getBoundingClientRect();
@@ -406,7 +413,9 @@ try {
         }),
       ).toBe(true);
     }
-    await page.keyboard.press("Escape");
+    await inspectorTabs
+      .getByRole("tab", { name: "Adjust", exact: true })
+      .click();
     await settings.click();
     await expect(dialog).toBeVisible();
     const settingsBounds = await dialog.boundingBox();
@@ -426,25 +435,24 @@ try {
     await page
       .getByRole("heading", { name: "DLSS Image Studio", exact: true })
       .click();
-    const screenshot = resolve(evidenceDir, `revision-${name}.png`);
+    const screenshot = resolve(evidenceDir, `corrected-${name}.png`);
     await page.screenshot({ path: screenshot });
     report.screenshots.push(screenshot);
     checks.push(
-      `${width} × ${height}: no page overflow, title labels/navigation/menu/Settings contained, all six color controls fit, shelf below neural controls, actions unobstructed`,
+      `${width} × ${height}: no page overflow, title labels/peer tabs/sub-tabs/Settings contained, all six color controls fit, shelf below neural controls, actions unobstructed`,
     );
   }
   await page.setViewportSize({ width: 1536, height: 1024 });
-  await panels.click();
-  await expect(panelMenu).toBeVisible();
-  const menuBounds = await panelMenu.boundingBox();
-  expect(menuBounds.x).toBeGreaterThanOrEqual(0);
-  expect(menuBounds.y).toBeGreaterThanOrEqual(0);
-  expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(1536);
-  expect(menuBounds.y + menuBounds.height).toBeLessThanOrEqual(1024);
-  const menuScreenshot = resolve(evidenceDir, "revision-menu.png");
-  await page.screenshot({ path: menuScreenshot });
-  report.screenshots.push(menuScreenshot);
-  await page.keyboard.press("Escape");
+  await workspacePeer.click();
+  await workspaceTab("Masks").click();
+  const workspaceScreenshot = resolve(evidenceDir, "corrected-workspace.png");
+  await page.screenshot({ path: workspaceScreenshot });
+  report.screenshots.push(workspaceScreenshot);
+  await inspectorTabs.getByRole("tab", { name: "Adjust", exact: true }).click();
+  const selectionResult = await checkInspectorSelection(page, evidenceDir);
+  checks.push(...selectionResult.checks);
+  report.selection = selectionResult.measurements;
+  report.screenshots.push(selectionResult.screenshot);
   await settings.click();
   await expect(dialog).toBeVisible();
   const dialogBounds = await dialog.boundingBox();
@@ -452,12 +460,12 @@ try {
   expect(dialogBounds.y).toBeGreaterThanOrEqual(0);
   expect(dialogBounds.x + dialogBounds.width).toBeLessThanOrEqual(1536);
   expect(dialogBounds.y + dialogBounds.height).toBeLessThanOrEqual(1024);
-  const settingsScreenshot = resolve(evidenceDir, "revision-settings.png");
+  const settingsScreenshot = resolve(evidenceDir, "corrected-settings.png");
   await page.screenshot({ path: settingsScreenshot });
   report.screenshots.push(settingsScreenshot);
   await page.keyboard.press("Escape");
   checks.push(
-    "Expanded Panels menu and Settings dialog stay within desktop bounds",
+    "Workspace sub-tabs and Settings dialog stay within desktop bounds",
   );
   expect(errors).toEqual([]);
   report.passed = true;
@@ -469,7 +477,7 @@ try {
   process.exitCode = 1;
 } finally {
   await writeFile(
-    resolve(evidenceDir, "revision-validation.json"),
+    resolve(evidenceDir, "corrected-validation.json"),
     JSON.stringify(report, null, 2),
   );
   await browser.close();

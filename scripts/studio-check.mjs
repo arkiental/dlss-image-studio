@@ -34,7 +34,7 @@ if (snapshotBounds.y < neuralBounds.y + neuralBounds.height)
 await page.screenshot({
   path: resolve(evidenceDir, "studio-professional.png"),
 });
-await page.getByRole("button", { name: "Refine", exact: true }).click();
+await page.getByRole("tab", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1");
 await page.waitForFunction(() =>
@@ -43,7 +43,7 @@ await page.waitForFunction(() =>
 await page.getByLabel("Before/After mode").selectOption("vertical");
 await page.screenshot({ path: resolve(evidenceDir, "studio-comparison.png") });
 await page.setViewportSize({ width: 1080, height: 840 });
-await page.getByRole("button", { name: "Adjust", exact: true }).click();
+await page.getByRole("tab", { name: "Adjust", exact: true }).click();
 const panelBounds = await page.locator(".inspector-content").boundingBox();
 const lastCardBounds = await page
   .locator(".classic-color-grid .classic-control")
@@ -57,10 +57,8 @@ if (
 await page.screenshot({ path: resolve(evidenceDir, "studio-compact.png") });
 await page.setViewportSize({ width: 1536, height: 1024 });
 await page.getByLabel("Before/After mode").selectOption("processed");
-await page
-  .getByRole("button", { name: "Workspace panels", exact: true })
-  .click();
-await page.getByRole("menuitemradio", { name: "Masks", exact: true }).click();
+await page.getByRole("tab", { name: "Workspace", exact: true }).click();
+await page.getByRole("tab", { name: "Masks", exact: true }).click();
 await page.getByLabel("Add mask").selectOption("ellipse");
 await page.getByRole("slider", { name: "Feather", exact: true }).fill("35");
 await page.waitForFunction(() =>
@@ -68,14 +66,14 @@ await page.waitForFunction(() =>
 );
 await page.waitForTimeout(150);
 await page.screenshot({ path: resolve(evidenceDir, "studio-masks.png") });
-await page.getByRole("button", { name: "Effects", exact: true }).click();
+await page.getByRole("tab", { name: "Effects", exact: true }).click();
 await page.getByRole("slider", { name: "Vignette", exact: true }).fill("12");
 await page
   .getByRole("button", { name: "Create snapshot", exact: true })
   .first()
   .click();
 await expect(page.locator(".variant-strip .variant")).toHaveCount(2);
-await page.getByRole("button", { name: "Export", exact: true }).first().click();
+await page.getByRole("tab", { name: "Export", exact: true }).first().click();
 await expect(page.getByLabel("Output size")).toHaveValue("original");
 await page.getByLabel("Output format").selectOption("exr");
 await expect(page.getByLabel("Output bit depth")).toHaveValue("32");

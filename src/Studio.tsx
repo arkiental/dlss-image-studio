@@ -30,7 +30,11 @@ import { NeuralAdjustments, QuickExport } from "./StudioClassic";
 import { RangeInput } from "./RangeInput";
 import { Scopes } from "./Scopes";
 import { Panels, SettingsPanel, Variants } from "./StudioPanels";
-import { WorkspaceMenu } from "./WorkspaceMenu";
+import { InspectorSelection } from "./InspectorSelection";
+import {
+  getInspectorSelection,
+  selectionFactorLimits,
+} from "./inspectorGeometry";
 import { useStudio, unpack } from "./useStudio";
 import { defaults, clamp } from "./state";
 import type { Finish, MaskLayer } from "./finish";
@@ -40,7 +44,7 @@ export default function Studio() {
   const d = useStudio(),
     s = d.state,
     a = s.finish;
-  const [workspace, setWorkspace] = useState("Adjust"),
+  const [workspaceSelection, setWorkspaceSelection] = useState("Masks"),
     [tab, setTab] = useState("Adjust"),
     [bottom, setBottom] = useState("Snapshots"),
     [settings, setSettings] = useState(false),
@@ -61,6 +65,12 @@ export default function Studio() {
     ),
     [view, setView] = useState({ scale: 1, x: 0, y: 0 }),
     [size, setSize] = useState({ w: 900, h: 640 });
+  const workspace = tab === "Workspace" ? workspaceSelection : "Adjust";
+  const setWorkspace = (name: string) => {
+    setWorkspaceSelection(name);
+    setTab("Workspace");
+    if (name === "Presets") setBottom("Presets");
+  };
   const viewport = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     zoomCanvas = useRef<HTMLCanvasElement>(null),
@@ -150,6 +160,18 @@ export default function Studio() {
     );
     return c.getContext("2d")!.getImageData(0, 0, c.width, c.height);
   }, [d.source, a.crop, a.rotation, a.flipX, a.flipY]);
+  const inspectorImage =
+    holdOriginal || compare === "original" ? original : d.image;
+  const inspectorSize = inspectorImage || {
+    width: dimensions.w,
+    height: dimensions.h,
+  };
+  const inspectorLimits = selectionFactorLimits(inspectorSize);
+  const inspectorFactor = getInspectorSelection(
+    inspectorPoint,
+    s.zoom.factor,
+    inspectorSize,
+  ).factor;
   useEffect(() => {
     const ro = new ResizeObserver(([e]) =>
       setSize({ w: e.contentRect.width, h: e.contentRect.height }),
@@ -190,23 +212,22 @@ export default function Studio() {
     c.height = 400;
     const ctx = c.getContext("2d")!;
     ctx.imageSmoothingEnabled = !pixelGrid;
-    const w = 300 / s.zoom.factor,
-      h = 200 / s.zoom.factor;
+    const selection = getInspectorSelection(inspectorPoint, s.zoom.factor, p);
     ctx.clearRect(0, 0, 600, 400);
     ctx.drawImage(
       src,
-      inspectorPoint.x * p.width - w / 2,
-      inspectorPoint.y * p.height - h / 2,
-      w,
-      h,
+      selection.x,
+      selection.y,
+      selection.width,
+      selection.height,
       0,
       0,
       600,
       400,
     );
-    if (pixelGrid && s.zoom.factor >= 4) {
+    if (pixelGrid && selection.factor >= 4) {
       ctx.strokeStyle = "#ffffff35";
-      const step = s.zoom.factor * 2;
+      const step = selection.factor * 2;
       for (let x = 0; x < 600; x += step) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -283,7 +304,6 @@ export default function Studio() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
-      if ((e.target as HTMLElement).closest(".workspace-menu")) return;
       if (e.key === "Escape") {
         setHidden(false);
         setSettings(false);
@@ -884,12 +904,22 @@ export default function Studio() {
                       style={{ opacity: overlayOpacity }}
                     />
                   )}
-                  {s.zoom.visible && (
-                    <div
-                      className="inspection-reticle"
-                      style={{
-                        left: `${inspectorPoint.x * 100}%`,
-                        top: `${inspectorPoint.y * 100}%`,
+                  {s.zoom.visible && inspectorImage && (
+                    <InspectorSelection
+                      imageSize={inspectorImage}
+                      displaySize={{ width: box.w, height: box.h }}
+                      center={inspectorPoint}
+                      factor={inspectorFactor}
+                      disabled={
+                        space || !!picker || (workspace === "Masks" && !!mask)
+                      }
+                      onChange={(center, factor) => {
+                        setInspectorPoint(center);
+                        if (factor !== s.zoom.factor)
+                          d.setState((p) => ({
+                            ...p,
+                            zoom: { ...p.zoom, factor },
+                          }));
                       }}
                     />
                   )}
@@ -959,10 +989,10 @@ export default function Studio() {
                     <div className="slider-wrap">
                       <RangeInput
                         label="Inspector zoom factor"
-                        min={1}
-                        max={10}
+                        min={inspectorLimits.min}
+                        max={inspectorLimits.max}
                         step={0.1}
-                        value={s.zoom.factor}
+                        value={inspectorFactor}
                         onValue={(v) =>
                           d.setState((p) => ({
                             ...p,
@@ -971,12 +1001,12 @@ export default function Studio() {
                         }
                         style={
                           {
-                            "--fill": `${((s.zoom.factor - 1) / 9) * 100}%`,
+                            "--fill": `${((inspectorFactor - inspectorLimits.min) / Math.max(1, inspectorLimits.max - inspectorLimits.min)) * 100}%`,
                           } as CSSProperties
                         }
                       />
                     </div>
-                    <output>{s.zoom.factor.toFixed(1)}×</output>
+                    <output>{inspectorFactor.toFixed(1)}×</output>
                     <select
                       aria-label="Inspector presets"
                       value=""
@@ -1051,13 +1081,7 @@ export default function Studio() {
           </div>
           <aside className="pro-inspector">
             <nav className="nav-rail">
-              <WorkspaceMenu
-                workspace={workspace}
-                onSelect={(name) => {
-                  setWorkspace(name);
-                  if (name === "Presets") setBottom("Presets");
-                }}
-              />
+              <span className="inspector-label">Inspector</span>
               <div className="rail-spacer" />
               <button
                 title="Undo · Ctrl+Z"
@@ -1077,23 +1101,58 @@ export default function Studio() {
               </button>
             </nav>
 
-            <div className="inspector-tabs">
-              {["Adjust", "Refine", "Effects", "Tools", "Export"].map((n) => (
+            <div
+              className="inspector-tabs"
+              role="tablist"
+              aria-label="Inspector sections"
+            >
+              {[
+                "Adjust",
+                "Refine",
+                "Effects",
+                "Workspace",
+                "Tools",
+                "Export",
+              ].map((n) => (
                 <button
                   key={n}
-                  className={
-                    workspace === "Adjust" && tab === n ? "active" : ""
-                  }
-                  onClick={() => {
-                    setTab(n);
-                    setWorkspace("Adjust");
+                  id={`inspector-tab-${n.toLowerCase()}`}
+                  role="tab"
+                  aria-selected={tab === n}
+                  aria-controls="inspector-panel"
+                  tabIndex={tab === n ? 0 : -1}
+                  className={tab === n ? "active" : ""}
+                  onClick={() => setTab(n)}
+                  onKeyDown={(e) => {
+                    const buttons = Array.from(
+                      e.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>(
+                        "button",
+                      ),
+                    );
+                    const index = buttons.indexOf(e.currentTarget);
+                    let next = index;
+                    if (e.key === "ArrowRight")
+                      next = (index + 1) % buttons.length;
+                    else if (e.key === "ArrowLeft")
+                      next = (index - 1 + buttons.length) % buttons.length;
+                    else if (e.key === "Home") next = 0;
+                    else if (e.key === "End") next = buttons.length - 1;
+                    else return;
+                    e.preventDefault();
+                    setTab(buttons[next].textContent!);
+                    buttons[next].focus();
                   }}
                 >
                   {n}
                 </button>
               ))}
             </div>
-            <div className="inspector-content">
+            <div
+              className="inspector-content"
+              id="inspector-panel"
+              role="tabpanel"
+              aria-labelledby={`inspector-tab-${tab.toLowerCase()}`}
+            >
               <Panels
                 d={d}
                 workspace={workspace}
@@ -1170,13 +1229,17 @@ export default function Studio() {
                 ...v,
                 zoom: {
                   ...v.zoom,
-                  factor: clamp(v.zoom.factor - e.deltaY * 0.002, 1, 10),
+                  factor: clamp(
+                    inspectorFactor - e.deltaY * 0.002,
+                    inspectorLimits.min,
+                    inspectorLimits.max,
+                  ),
                 },
               }))
             }
           >
             <div className="zoom-header" onPointerDown={inspectorDrag}>
-              Zoom {s.zoom.factor.toFixed(1)}x
+              Zoom {inspectorFactor.toFixed(1)}x
               <button
                 aria-label="Close zoom"
                 onClick={() =>

@@ -17,7 +17,11 @@
 Use the mouse wheel or zoom slider to zoom. Fit shows the whole image; Fill fills
 the viewport. Pan with middle mouse or Space + left drag. The floating detail
 inspector examines the same completed processed image, can be moved outside the
-image area, and supports 1–10× magnification. Its toggle does not change processing.
+image area, and supports 1–10× magnification. Tiny images use the minimum
+magnification needed to keep the sampled area inside the image. Drag the selection
+box to move it or drag a corner or edge handle to resize it. Arrow keys move the
+focused box by one image pixel; focused handles resize it. Hold Shift for ten-pixel
+steps. Escape cancels an active drag. Its toggle does not change processing.
 Use the split-view controls for vertical or horizontal comparison; drag the divider.
 
 `B` toggles before/after; hold `\` to temporarily inspect the original. `F` fits,
@@ -65,9 +69,9 @@ and deep EXR are not included. Review [supported features and limits](PROFESSION
 additional `.cube` files you have permission to use. LUTs are display-oriented;
 read [the LUT guide](LUTS.md) before applying them to HDR renders.
 
-Open **Panels > Masks** for shape, brush, gradient, color or luminance selections. Name masks,
+Open **Workspace > Masks** for shape, brush, gradient, color or luminance selections. Name masks,
 adjust feather/opacity and use combine/subtract/intersect as needed. Mask edits are
-non-destructive. **Panels > Passes** imports individual passes and supported flat EXR
+non-destructive. **Workspace > Passes** imports individual passes and supported flat EXR
 channels for inspection, selection and supported depth effects. Cryptomatte and
 some advanced pass features are not implemented; no unsupported control is promised.
 
@@ -79,7 +83,7 @@ moving computers. Custom LUT assets are embedded in projects/presets. Save
 named snapshots in the bottom strip; history and `Ctrl+Z` / `Ctrl+Shift+Z` help
 compare and undo changes. A project is not a replacement for a source-image backup.
 
-Use **Panels > Batch** to add images, apply shared settings or per-image overrides, select an
+Use **Workspace > Batch** to add images, apply shared settings or per-image overrides, select an
 output folder and process the queue. Check errors individually. The batch queue
 persists while the app stays open; save important image edits as projects.
 
