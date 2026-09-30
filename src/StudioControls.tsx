@@ -32,12 +32,24 @@ export function Control({
   card?: boolean;
 }) {
   const numericDrag = useRef<{ x: number; value: number } | null>(null);
+  const [numericValue, setNumericValue] = useState(
+    String(Number(value.toFixed(3))),
+  );
+  useEffect(() => {
+    setNumericValue(String(Number(value.toFixed(3))));
+  }, [value]);
   return (
     <div
       className={`pro-control ${card ? "classic-control" : ""}`}
       title={tip || label}
-      onDoubleClick={() => !disabled && onChange(reset)}
+      onDoubleClick={(e) => {
+        if (e.target instanceof HTMLInputElement && e.target.type === "number")
+          return;
+        if (!disabled) onChange(reset);
+      }}
       onContextMenu={(e) => {
+        if (e.target instanceof HTMLInputElement && e.target.type === "number")
+          return;
         e.preventDefault();
         if (!disabled) onChange(reset);
       }}
@@ -67,15 +79,27 @@ export function Control({
       <input
         aria-label={`${label} value`}
         type="number"
-        value={Number(value.toFixed(3))}
+        value={numericValue}
         disabled={disabled}
         min={min}
         max={max}
         step={step}
-        onChange={(e) =>
-          onChange(Math.min(max, Math.max(min, +e.target.value)))
-        }
+        onChange={(e) => {
+          setNumericValue(e.target.value);
+          const next = e.target.valueAsNumber;
+          if (Number.isFinite(next))
+            onChange(Math.min(max, Math.max(min, next)));
+        }}
+        onBlur={() => setNumericValue(String(Number(value.toFixed(3))))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") {
+            setNumericValue(String(Number(value.toFixed(3))));
+            e.currentTarget.blur();
+          }
+        }}
         onPointerDown={(e) => {
+          if (e.button !== 0 || disabled) return;
           numericDrag.current = { x: e.clientX, value };
         }}
         onPointerMove={(e) => {
@@ -98,8 +122,13 @@ export function Control({
             ),
           );
         }}
-        onPointerUp={() => (numericDrag.current = null)}
+        onPointerUp={(e) => {
+          numericDrag.current = null;
+          if (e.currentTarget.hasPointerCapture(e.pointerId))
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }}
         onPointerCancel={() => (numericDrag.current = null)}
+        onLostPointerCapture={() => (numericDrag.current = null)}
       />
     </div>
   );
@@ -175,6 +204,7 @@ function GroupContent({
             onClick={onReset}
           >
             <RotateCcw size={13} />
+            <span>Reset</span>
           </button>
         )}
       </header>
@@ -279,7 +309,7 @@ export function CurveEditor({
             (_, i) => `${i * 2},${(1 - curveValue(points, i / 128)) * 150}`,
           ).join(" ")}
           fill="none"
-          stroke={["#edbc73", "#dd7979", "#7bb990", "#7eacdc"][channel]}
+          stroke={["var(--gold)", "#dd7979", "#7bb990", "#7eacdc"][channel]}
           strokeWidth="2"
           pointerEvents="none"
         />
@@ -289,7 +319,7 @@ export function CurveEditor({
             cx={p.x * 256}
             cy={(1 - p.y) * 150}
             r="4"
-            fill={selected === i ? "#fff0cd" : "#edbc73"}
+            fill={selected === i ? "#ffffff" : "#b5b5b5"}
             onDoubleClick={() => {
               if (i > 0 && i < points.length - 1)
                 update(points.filter((_, j) => j !== i));

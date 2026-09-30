@@ -22,7 +22,7 @@ every RTX model is not established. Releases are currently unsigned.
 
 ## Version 0.2
 
-- The original two-column studio appearance: large viewport, colored slider cards, neural adjustments below the image, contextual advanced tabs, and snapshots/presets/history along the bottom.
+- A compact, monochrome two-column studio: large viewport, icon-labeled slider cards, neural adjustments below the image, contextual advanced tabs, and snapshots/presets/history along the bottom.
 - Wheel zoom, numerical zoom, Fit/Fill, pan, vertical/horizontal before-after splits, temporary original view, a floating 1–10× inspector, pixel grid, presentation mode and fullscreen.
 - Existing **real neural rendering** and neural styles, intensity, tone, structure and evaluation resolution. Conventional processing stays separate.
 - Scene-linear float finishing: exposure and tonal ranges, RGB/channel curves, white balance, three-way grading, denoise, sharpening, clarity, texture and broad local contrast.
@@ -49,7 +49,7 @@ The provider accepts 8-bit and 16-bit display-referred RGBA. High-bit-depth SDR 
 3. Capture named snapshots. Use Masks or Passes for targeted finishing.
 4. Export at original dimensions; use EXR to preserve HDR or 16-bit PNG/TIFF for an integer deliverable.
 
-**Ctrl+O** open · **Ctrl+S** project · **Ctrl+Shift+S** Save As · **Ctrl+E** export · **Ctrl+Z / Ctrl+Shift+Z** undo/redo · **F** fit · **1** 100% · **B** before/after · hold **\** original · **Space+drag / middle drag** pan · **Tab** presentation · **F11** fullscreen · **M** masks · **Z** inspector.
+**Ctrl+O** open · **Ctrl+S** project · **Ctrl+Shift+S** Save As · **Ctrl+E** export · **Ctrl+Z / Ctrl+Shift+Z** undo/redo · **F** fit · **1** 100% · **B** before/after · hold **\** original · **Space+drag / middle drag** pan · **P** presentation · **F11** fullscreen · **M** masks · **Z** inspector. **Tab** moves keyboard focus between controls.
 
 Sliders and numeric values support dragging, typing, keyboard arrows, Shift for fine movement, Ctrl/Cmd for finer movement, and double-click/right-click reset.
 

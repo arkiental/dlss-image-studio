@@ -21,6 +21,21 @@ npm run tauri dev
 
 Browser-only UI development: `npm run dev`. Browser processing is an explicitly separate worker implementation for UI testing; it is never described as native D3D12 or DLSS.
 
+For an isolated UI review that does not initialize the native engine:
+
+```powershell
+npm run dev -- --host 127.0.0.1 --port 1426
+```
+
+In a second terminal, run the interaction and layout checks:
+
+```powershell
+$env:STUDIO_URL = 'http://127.0.0.1:1426'
+node scripts/ui-polish-check.mjs
+```
+
+The check uses headless Edge and writes screenshots and a validation report to `../evidence` (`EVIDENCE_DIR` overrides the destination). Neural rendering stays disabled in this browser mode.
+
 ## Release executable and installers
 
 ```powershell

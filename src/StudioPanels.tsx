@@ -99,10 +99,17 @@ export function Variants({
   bottom: string;
   setBottom: (v: string) => void;
 }) {
-  const [name, setName] = useState("Portfolio Final"),
+  const [name, setName] = useState(""),
     [selected, setSelected] = useState(""),
+    [selectedSnapshot, setSelectedSnapshot] = useState(""),
     [strength, setStrength] = useState(100),
     [part, setPart] = useState("all");
+  const canCapture = !!d.source && !!d.image && d.ready && !d.busy;
+  const captureTitle = !d.source
+    ? "Open an image to create a snapshot"
+    : !canCapture
+      ? "Wait for the preview to finish"
+      : "Create snapshot";
   const base = useRef<StudioState | null>(null);
   const presets = useMemo(
     () => [
@@ -179,18 +186,33 @@ export function Variants({
     d.setState(blendPreset(base.current, preset.state, n, p));
   };
   const capture = () => {
+    if (!canCapture) return;
+    const id = crypto.randomUUID();
     d.setSnapshots((v) =>
       [
         ...v,
         {
-          id: crypto.randomUUID(),
-          name: name || `Snapshot ${v.length + 1}`,
+          id,
+          name: name.trim() || `Snapshot ${v.length + 1}`,
           thumbnail: captureThumbnail(),
           state: structuredClone(d.state),
         },
       ].slice(-64),
     );
+    setSelectedSnapshot(id);
     setBottom("Snapshots");
+  };
+  const savePreset = () => {
+    d.setPresets((v) => [
+      ...v,
+      {
+        id: crypto.randomUUID(),
+        name: name.trim() || `Preset ${v.length + 1}`,
+        category: "User",
+        state: structuredClone(d.state),
+      },
+    ]);
+    setBottom("Presets");
   };
   return (
     <section className="variant-shelf">
@@ -199,6 +221,7 @@ export function Variants({
           {["Presets", "Snapshots", "History"].map((n) => (
             <button
               className={bottom === n ? "active" : ""}
+              aria-pressed={bottom === n}
               key={n}
               onClick={() => setBottom(n)}
             >
@@ -209,33 +232,30 @@ export function Variants({
         <div className="shelf-actions">
           <input
             aria-label="Variant name"
+            placeholder="Snapshot / preset name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={64}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") capture();
+            }}
           />
           <button
-            title="Create snapshot"
+            title={captureTitle}
             aria-label="Create snapshot"
+            disabled={!canCapture}
             onClick={capture}
           >
             <Camera size={17} />
+            <span>Create snapshot</span>
           </button>
           <button
             title="Save preset"
             aria-label="Save preset"
-            onClick={() =>
-              d.setPresets((v) => [
-                ...v,
-                {
-                  id: crypto.randomUUID(),
-                  name,
-                  category: "User",
-                  state: structuredClone(d.state),
-                },
-              ])
-            }
+            onClick={savePreset}
           >
             <Bookmark size={17} />
+            <span>Save preset</span>
           </button>
           <button
             title="Reset all"
@@ -245,10 +265,14 @@ export function Variants({
               s.neural.enabled = d.state.neural.enabled;
               s.neural.toneMap = d.state.neural.toneMap;
               s.zoom = d.state.zoom;
+              setSelected("");
+              setSelectedSnapshot("");
+              base.current = null;
               d.setState(s);
             }}
           >
             <RotateCcw size={17} />
+            <span>Reset</span>
           </button>
         </div>
       </div>
@@ -263,7 +287,9 @@ export function Variants({
               max={100}
               value={strength}
               onChange={(e) => {
-                const n = Math.max(0, Math.min(100, +e.target.value));
+                const value = e.target.valueAsNumber;
+                if (!Number.isFinite(value)) return;
+                const n = Math.max(0, Math.min(100, value));
                 setStrength(n);
                 apply(selected, n);
               }}
@@ -290,6 +316,7 @@ export function Variants({
               <button
                 key={h.id}
                 className={d.cursor === i ? "active" : ""}
+                aria-pressed={d.cursor === i}
                 onClick={() => d.restore(i)}
               >
                 <History size={16} />
@@ -298,13 +325,27 @@ export function Variants({
             ))
           : (bottom === "Presets" ? presets : d.snapshots).map((v) => (
               <div
-                className={`variant ${selected === v.id ? "active" : ""}`}
+                className={`variant ${(bottom === "Presets" ? selected : selectedSnapshot) === v.id ? "active" : ""}`}
                 key={v.id}
               >
                 <button
+                  aria-pressed={
+                    (bottom === "Presets" ? selected : selectedSnapshot) ===
+                    v.id
+                  }
+                  title={
+                    bottom === "Presets"
+                      ? `Apply ${v.name}`
+                      : `Restore ${v.name}`
+                  }
                   onClick={() => {
                     if (bottom === "Presets") apply(v.id);
-                    else d.setState(structuredClone(v.state));
+                    else {
+                      setSelectedSnapshot(v.id);
+                      setSelected("");
+                      base.current = null;
+                      d.setState(structuredClone(v.state));
+                    }
                   }}
                 >
                   {(v.thumbnail || thumbs[v.id]) && (
@@ -327,10 +368,12 @@ export function Variants({
                 {bottom === "Snapshots" && (
                   <button
                     className="variant-delete"
-                    title="Delete snapshot"
-                    onClick={() =>
-                      d.setSnapshots((q) => q.filter((p) => p.id !== v.id))
-                    }
+                    title={`Delete ${v.name}`}
+                    aria-label={`Delete snapshot ${v.name}`}
+                    onClick={() => {
+                      d.setSnapshots((q) => q.filter((p) => p.id !== v.id));
+                      if (selectedSnapshot === v.id) setSelectedSnapshot("");
+                    }}
                   >
                     <X size={12} />
                   </button>
@@ -338,7 +381,12 @@ export function Variants({
               </div>
             ))}
         {bottom === "Snapshots" && !d.snapshots.length && (
-          <button className="add-variant" onClick={capture}>
+          <button
+            className="add-variant"
+            title={captureTitle}
+            disabled={!canCapture}
+            onClick={capture}
+          >
             <Plus />
             Create snapshot
           </button>
@@ -1397,7 +1445,9 @@ function PresetPanel({ d }: { d: Document }) {
       {d.presets.map((p) => (
         <div className="preset-row" key={p.id}>
           <button
-            title="Favorite"
+            title={p.favorite ? "Remove favorite" : "Favorite preset"}
+            aria-label={`Favorite preset ${p.name}`}
+            aria-pressed={!!p.favorite}
             onClick={() =>
               d.setPresets((v) =>
                 v.map((x) =>
@@ -1406,7 +1456,7 @@ function PresetPanel({ d }: { d: Document }) {
               )
             }
           >
-            <Star size={14} fill={p.favorite ? "#edbc73" : "none"} />
+            <Star size={14} fill={p.favorite ? "currentColor" : "none"} />
           </button>
           <input
             aria-label="Preset name"
@@ -1421,6 +1471,7 @@ function PresetPanel({ d }: { d: Document }) {
           />
           <button
             title="Duplicate preset"
+            aria-label={`Duplicate preset ${p.name}`}
             onClick={() =>
               d.setPresets((v) => [
                 ...v,
@@ -1432,6 +1483,7 @@ function PresetPanel({ d }: { d: Document }) {
           </button>
           <button
             title="Delete preset"
+            aria-label={`Delete preset ${p.name}`}
             onClick={() => d.setPresets((v) => v.filter((x) => x.id !== p.id))}
           >
             <X size={14} />
@@ -1560,13 +1612,52 @@ export function SettingsPanel({
   close: () => void;
 }) {
   const [space, setSpace] = useState("auto");
+  const dialog = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialog.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => {
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus();
+    };
+  }, []);
   return (
     <div className="modal-backdrop" onClick={close}>
       <section
+        ref={dialog}
         className="settings-dialog"
         role="dialog"
         aria-label="Studio Settings"
+        aria-modal="true"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            close();
+            return;
+          }
+          if (e.key !== "Tab") return;
+          const controls = Array.from(
+            e.currentTarget.querySelectorAll<HTMLElement>(
+              'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((element) => element.getClientRects().length > 0);
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (!first) {
+            e.preventDefault();
+            e.currentTarget.focus();
+          } else if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+          e.stopPropagation();
+        }}
       >
         <div className="panel-heading">
           <h2>Studio Settings</h2>
@@ -1583,7 +1674,8 @@ export function SettingsPanel({
         <p className="muted">
           Neural rendering uses a separately installed Visual Enhancer v13.2
           runtime. It accepts 8-bit and 16-bit SDR images. HDR imports use a
-          labeled, reversible SDR working copy; original float data is preserved.
+          labeled, reversible SDR working copy; original float data is
+          preserved.
         </p>
         <button
           disabled={!isTauri()}
@@ -1633,7 +1725,7 @@ export function SettingsPanel({
         </Group>
         <p>
           F: Fit · 1: 100% · B: before/after · hold \: original · Space-drag or
-          middle drag: pan · Tab: presentation · M: masks · Ctrl+Z: undo ·
+          middle drag: pan · P: presentation · M: masks · Ctrl+Z: undo ·
           Ctrl+Shift+Z: redo · Ctrl+S: project · Ctrl+E: export
         </p>
       </section>

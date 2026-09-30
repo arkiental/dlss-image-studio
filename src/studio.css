@@ -1,56 +1,69 @@
 .studio {
   font-size: 13px;
-  min-height: 700px;
+  min-height: 620px;
   display: flex;
   flex-direction: column;
   --accent: var(--gold);
 }
 .studio button {
-  border-radius: 5px;
+  border-radius: 4px;
   padding: 7px 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   font-size: 12px;
+  min-height: 32px;
+  white-space: nowrap;
 }
 .studio input,
 .studio select {
-  color: #eee8dc;
-  background: #111411;
-  border: 1px solid #3d4039;
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   padding: 5px;
   font: inherit;
   min-width: 0;
+  font-variant-numeric: tabular-nums;
 }
 .studio input[type="checkbox"] {
   accent-color: var(--gold);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex-shrink: 0;
 }
 .studio button.active,
 .studio .active > button,
 .studio .inspector-tabs .active {
-  border-color: #b2915a;
-  background: #2c2920;
-  color: #f6d699;
+  border-color: #aaa;
+  background: #303030;
+  color: #fff;
 }
 .studio .primary {
-  background: #cfa664;
-  color: #171914;
-  border-color: #e1b977;
+  background: #ededed;
+  color: #111;
+  border-color: #ededed;
   font-weight: 600;
 }
+.studio .primary:hover:not(:disabled) {
+  background: #fff;
+  border-color: #fff;
+}
 .studio .titlebar {
-  height: 60px;
+  height: 52px;
   flex-shrink: 0;
-  padding-left: 22px;
-  border-bottom: 1px solid #282c27;
+  padding-left: 18px;
+  border-bottom: 1px solid var(--border);
 }
 .studio .titlebar h1 {
-  font-size: 30px;
+  font-size: 20px;
 }
 .studio .titlebar button {
-  width: 36px;
+  width: auto;
+  min-width: 34px;
+  height: 34px;
 }
 .pro-workspace {
   flex: 1;
@@ -79,7 +92,7 @@
   flex: 1;
 }
 .nav-rail button.active {
-  background: #26261f;
+  background: #303030;
 }
 .center-workspace {
   min-width: 0;
@@ -94,15 +107,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: #151815;
-  border: 1px solid #3b3f36;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
 }
 .studio .viewport {
   flex: 1;
   min-height: 80px;
-  background: #10120f;
+  background: #080808;
   overflow: hidden;
   touch-action: none;
 }
@@ -130,8 +143,8 @@
   flex-shrink: 0;
   height: 53px;
   padding: 0 13px;
-  border-bottom: 1px solid #30352d;
-  background: #181b17;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
   white-space: nowrap;
 }
 .pro-view-toolbar .slider-wrap {
@@ -156,14 +169,13 @@
   height: 25px;
 }
 .studio .view-label {
-  font-size: 9px;
-  letter-spacing: 1.6px;
+  font-size: 12px;
 }
 .detail-toolbar {
   height: 41px;
-  border-top: 1px solid #30352d;
+  border-top: 1px solid var(--border);
   border-bottom: 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 .detail-toolbar .slider-wrap {
   width: 105px;
@@ -179,7 +191,7 @@
 }
 .detail-toolbar select {
   max-width: 80px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .detail-toolbar output {
   width: 34px;
@@ -190,6 +202,10 @@
 }
 .studio .inspector-switch input {
   opacity: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
 }
 .studio .inspector-switch span::after {
   width: 14px;
@@ -200,11 +216,11 @@
 }
 .pro-inspector {
   min-height: 0;
-  border: 1px solid #3b3f36;
+  border: 1px solid var(--border);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
-  background: #151815;
+  background: var(--surface);
   overflow: hidden;
 }
 .inspector-tabs {
@@ -212,7 +228,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding: 8px;
-  border-bottom: 1px solid #34382f;
+  border-bottom: 1px solid var(--border);
 }
 .inspector-tabs button {
   padding: 10px 2px;
@@ -223,11 +239,11 @@
   overflow-x: hidden;
   padding: 12px;
   scrollbar-width: thin;
-  scrollbar-color: #4a5041 transparent;
+  scrollbar-color: #666 transparent;
 }
 .inspector-content h2 {
-  font-size: 24px;
-  margin: 5px 0 14px;
+  font-size: 16px;
+  margin: 4px 0 12px;
 }
 .inspector-content > label,
 .group-content > label {
@@ -244,15 +260,15 @@
 .group-content > small {
   display: block;
   line-height: 1.5;
-  color: #a3aa9a;
+  color: var(--muted);
   margin: 10px 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 .inspector-footer {
   display: flex;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid #34382f;
+  border-top: 1px solid var(--border);
 }
 .inspector-footer .primary {
   flex: 1;
@@ -268,15 +284,14 @@
   font-size: 11px;
 }
 .pro-group {
-  border: 1px solid #33392f;
-  border-radius: 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   margin-bottom: 10px;
   overflow: hidden;
 }
 .pro-group > header {
   display: flex;
-  background: #191d18;
-  border-left: 2px solid #b49761;
+  background: var(--surface-raised);
 }
 .pro-group > header > button:first-child {
   flex: 1;
@@ -284,15 +299,16 @@
   border: 0;
   border-radius: 0;
   background: none;
-  padding: 14px 12px;
-  font-size: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 .pro-group .group-reset {
   border: 0;
   background: none;
   padding: 6px;
 }
-.pro-group:not(.open) > header svg {
+.pro-group:not(.open) > header > button:first-child > svg {
   transform: rotate(-90deg);
 }
 .group-content {
@@ -307,7 +323,7 @@
   gap: 9px;
   align-items: center;
   min-height: 42px;
-  border-bottom: 1px solid #262d23;
+  border-bottom: 1px solid #292929;
   font-size: 12px;
 }
 .pro-control:last-child {
@@ -342,7 +358,7 @@
 }
 .studio summary {
   cursor: pointer;
-  color: #c7c3b5;
+  color: #ccc;
   padding: 7px 0;
   font-size: 11px;
 }
@@ -375,22 +391,22 @@
 }
 .muted {
   font-size: 12px;
-  color: #a7ae9e;
+  color: var(--muted);
   line-height: 1.55;
 }
 .text-button {
   background: none !important;
   border: none !important;
-  color: #b9b6a9 !important;
+  color: #ccc !important;
 }
 .variant-shelf {
   min-height: 125px;
   max-height: 170px;
-  border: 1px solid #3b3f36;
+  border: 1px solid var(--border);
   border-radius: 5px;
   display: flex;
   flex-direction: column;
-  background: #151815;
+  background: var(--surface);
   position: relative;
 }
 .shelf-toolbar {
@@ -398,7 +414,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid #30352d;
+  border-bottom: 1px solid var(--border);
   padding: 5px 8px;
   flex-shrink: 0;
 }
@@ -406,17 +422,19 @@
 .shelf-actions {
   display: flex;
   gap: 5px;
+  align-items: center;
 }
 .shelf-tabs button {
   border-color: transparent;
   background: transparent;
 }
 .shelf-actions input {
-  width: 130px;
-  font-size: 11px;
+  width: 145px;
+  height: 32px;
+  font-size: 12px;
 }
 .shelf-actions button {
-  padding: 5px;
+  padding: 6px 8px;
 }
 .variant-strip {
   overflow-x: auto;
@@ -437,7 +455,7 @@
   padding: 0;
   gap: 0;
   overflow: hidden;
-  border: 1px solid #3f443a;
+  border: 1px solid var(--control-border);
   width: 100%;
 }
 .variant img {
@@ -458,15 +476,16 @@
   right: 2px;
   top: 2px;
   padding: 2px !important;
-  background: #161814d9;
+  background: #111e;
+  min-height: 24px !important;
 }
 .preset-strength {
   position: absolute;
   right: 10px;
   bottom: 9px;
   z-index: 2;
-  background: #171b16f5;
-  border: 1px solid #454a3e;
+  background: #161616;
+  border: 1px solid var(--control-border);
   padding: 5px;
   display: flex;
   gap: 8px;
@@ -488,23 +507,23 @@
   align-items: center;
   gap: 18px;
   padding: 0 18px;
-  border-top: 1px solid #34392f;
-  font-size: 10px;
-  color: #a5ad9b;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
   white-space: nowrap;
 }
 .status-gpu {
   margin-left: auto;
 }
 .ready {
-  color: #9dae80;
+  color: #ccc;
 }
 .working {
   color: var(--gold);
 }
 .comparison-line {
   position: absolute;
-  background: #f4eedb;
+  background: #fff;
   touch-action: none;
   z-index: 5;
 }
@@ -525,21 +544,21 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  border: 1px solid #ddd2af;
+  border: 1px solid #fff;
   border-radius: 50%;
-  background: #1a2119;
+  background: #111;
   padding: 9px;
-  color: #f2eddf;
+  color: #fff;
   font-size: 17px;
 }
 .comparison-label {
   position: absolute;
   top: 12px;
-  background: #171b16cc;
-  border: 1px solid #5e6355;
+  background: #111e;
+  border: 1px solid #777;
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
   pointer-events: none;
 }
 .comparison-label.before {
@@ -561,8 +580,8 @@
   bottom: 49px;
   right: 8px;
   width: 330px;
-  background: #151a13f5;
-  border: 1px solid #596149;
+  background: #111f;
+  border: 1px solid #777;
   z-index: 6;
   resize: both;
   overflow: auto;
@@ -581,17 +600,17 @@
   width: 100%;
   height: 155px;
   touch-action: none;
-  background: #10150f;
-  border: 1px solid #3a4430;
+  background: #080808;
+  border: 1px solid #666;
   cursor: crosshair;
 }
 .curve-grid {
-  stroke: #394131;
+  stroke: #444;
   stroke-width: 0.5;
 }
 .curve-editor small {
-  color: #a6af9b;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 11px;
 }
 .color-wheels {
   display: flex;
@@ -640,14 +659,14 @@
   gap: 6px;
   margin: 6px 0;
   padding: 5px;
-  border-bottom: 1px solid #333a2e;
+  border-bottom: 1px solid var(--border);
 }
 .mask-list button:first-of-type {
   flex: 1;
   justify-content: flex-start;
 }
 .mask-list .active {
-  background: #303225;
+  background: #303030;
 }
 .preset-row input {
   width: 130px;
@@ -663,8 +682,8 @@
 }
 .batch-list small {
   display: block;
-  color: #abb69e;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 11px;
 }
 .export-main {
   width: 100%;
@@ -677,16 +696,16 @@
   justify-content: center;
   align-items: center;
   gap: 15px;
-  background: radial-gradient(ellipse, #1a2017 0, #10140f 65%);
+  background: #080808;
 }
 .empty-state > svg {
   color: var(--gold);
 }
 .empty-state h2 {
-  font-size: 34px;
+  font-size: 24px;
 }
 .empty-state p {
-  color: #939e87;
+  color: var(--muted);
   font-size: 12px;
   margin: 0;
 }
@@ -748,10 +767,10 @@
   }
   .studio-status {
     gap: 10px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .shelf-actions input {
-    width: 80px;
+    width: 110px;
   }
   .pro-control {
     grid-template-columns: 98px minmax(35px, 1fr) 44px;

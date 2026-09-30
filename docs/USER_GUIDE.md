@@ -21,7 +21,8 @@ image area, and supports 1–10× magnification. Its toggle does not change proc
 Use the split-view controls for vertical or horizontal comparison; drag the divider.
 
 `B` toggles before/after; hold `\` to temporarily inspect the original. `F` fits,
-`1` selects 100%, `Z` toggles the inspector, `Tab` hides the UI and `F11` fullscreen.
+`1` selects 100%, `Z` toggles the inspector, `P` hides the UI and `F11` fullscreen.
+`Tab` moves keyboard focus between controls; `Escape` exits presentation or closes Settings.
 
 ## Neural adjustments versus conventional tools
 

@@ -287,6 +287,14 @@ export default function Studio() {
   }, []);
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.key === "Escape") {
+        setHidden(false);
+        setSettings(false);
+        setPicker(null);
+        return;
+      }
+      if ((e.target as HTMLElement).closest('[role="dialog"]')) return;
       const typing = (e.target as HTMLElement).closest(
         "input:not([type=range]):not([type=checkbox]),textarea,select,[contenteditable]",
       );
@@ -302,7 +310,14 @@ export default function Studio() {
         if (e.key.toLowerCase() === "z") e.shiftKey ? d.redo() : d.undo();
         return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (typing) return;
+      if (
+        (e.target as HTMLElement).closest(
+          'button,input,a,summary,[role="button"],[role="slider"],[role="application"]',
+        )
+      )
+        return;
       if (e.key === " ") {
         e.preventDefault();
         setSpace(true);
@@ -312,7 +327,7 @@ export default function Studio() {
         setCompare((c) => (c === "original" ? "processed" : "original"));
       if (e.key.toLowerCase() === "f") fitImage();
       if (e.key === "1") zoom(1);
-      if (e.key === "Tab") {
+      if (e.key.toLowerCase() === "p") {
         e.preventDefault();
         setHidden((v) => !v);
       }
@@ -330,11 +345,6 @@ export default function Studio() {
             .then((v) => getCurrentWindow().setFullscreen(!v));
         else if (document.fullscreenElement) void document.exitFullscreen();
         else void document.documentElement.requestFullscreen();
-      }
-      if (e.key === "Escape") {
-        setHidden(false);
-        setSettings(false);
-        setPicker(null);
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -646,19 +656,23 @@ export default function Studio() {
           <h1 data-tauri-drag-region>DLSS Image Studio</h1>
         </div>
         <button
+          className="title-action"
           title="Open render · Ctrl+O"
           aria-label="Open Render"
           onClick={() => d.openRender()}
         >
           <FolderOpen size={19} />
+          Open render
         </button>
         <button
+          className="title-action"
           title="Save project · Ctrl+S"
           aria-label="Save Project"
           onClick={() => d.saveProject()}
           disabled={!d.source}
         >
           <Save size={18} />
+          Save project
         </button>
         <button
           title="Settings"
@@ -667,18 +681,25 @@ export default function Studio() {
         >
           <Settings size={18} />
         </button>
-        <button aria-label="Minimize" onClick={() => windowAction("minimize")}>
-          <Minus size={18} />
-        </button>
-        <button
-          aria-label="Maximize"
-          onClick={() => windowAction("toggleMaximize")}
-        >
-          <Square size={15} />
-        </button>
-        <button aria-label="Close" onClick={() => windowAction("close")}>
-          <X size={19} />
-        </button>
+        {isTauri() && (
+          <>
+            <button
+              aria-label="Minimize"
+              onClick={() => windowAction("minimize")}
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              aria-label="Maximize"
+              onClick={() => windowAction("toggleMaximize")}
+            >
+              <Square size={15} />
+            </button>
+            <button aria-label="Close" onClick={() => windowAction("close")}>
+              <X size={19} />
+            </button>
+          </>
+        )}
       </header>
       {!d.source ? (
         <section
@@ -761,7 +782,7 @@ export default function Studio() {
                   value=""
                   onChange={(e) => zoom(+e.target.value)}
                 >
-                  <option value="">▾</option>
+                  <option value="">Presets</option>
                   {[0.25, 0.5, 1, 2].map((v) => (
                     <option key={v} value={v}>
                       {v * 100}%
@@ -789,11 +810,11 @@ export default function Studio() {
                 >
                   <option value="processed">After</option>
                   <option value="original">Before</option>
-                  <option value="vertical">Split ↔</option>
-                  <option value="horizontal">Split ↕</option>
+                  <option value="vertical">Split vertical</option>
+                  <option value="horizontal">Split horizontal</option>
                 </select>
                 <button
-                  title="Hide UI · Tab"
+                  title="Hide UI · P"
                   aria-label="Presentation mode"
                   onClick={() => setHidden((v) => !v)}
                 >
@@ -802,6 +823,9 @@ export default function Studio() {
               </div>
               <div
                 className="viewport"
+                tabIndex={0}
+                role="region"
+                aria-label="Image viewport"
                 ref={viewport}
                 onWheel={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
@@ -810,7 +834,10 @@ export default function Studio() {
                     y: e.clientY - r.top,
                   });
                 }}
-                onPointerDown={pointerDown}
+                onPointerDown={(e) => {
+                  e.currentTarget.focus({ preventScroll: true });
+                  pointerDown(e);
+                }}
                 onPointerMove={pointerMove}
                 onPointerUp={(e) => {
                   gesture.current = null;
@@ -908,7 +935,7 @@ export default function Studio() {
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => setHidden(false)}
                   >
-                    Show UI · Tab
+                    Show UI
                   </button>
                 )}
               </div>
@@ -980,9 +1007,11 @@ export default function Studio() {
                 <button
                   className={scopes ? "active" : ""}
                   title="Scopes"
+                  aria-pressed={scopes}
                   onClick={() => setScopes((v) => !v)}
                 >
                   <BarChart3 size={16} />
+                  Scopes
                 </button>
               </div>
               {scopes && (
@@ -1044,6 +1073,7 @@ export default function Studio() {
               <div className="rail-spacer" />
               <button
                 title="Undo · Ctrl+Z"
+                aria-label="Undo"
                 disabled={d.cursor < 0}
                 onClick={d.undo}
               >
@@ -1051,6 +1081,7 @@ export default function Studio() {
               </button>
               <button
                 title="Redo · Ctrl+Shift+Z"
+                aria-label="Redo"
                 disabled={d.cursor >= d.history.length - 1}
                 onClick={d.redo}
               >

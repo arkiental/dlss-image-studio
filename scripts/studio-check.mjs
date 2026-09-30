@@ -1,4 +1,10 @@
 import { chromium, expect } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
+const studioUrl = new URL(process.env.STUDIO_URL || "http://127.0.0.1:1420");
+studioUrl.searchParams.set("demo", "1");
+const evidenceDir = resolve(process.env.EVIDENCE_DIR || "docs/screenshots");
+await mkdir(evidenceDir, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
     process.env.BROWSER_EXE ||
@@ -8,7 +14,7 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1536, height: 1024 } });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-await page.goto("http://127.0.0.1:1420/?demo=1");
+await page.goto(studioUrl.href);
 await expect(page.locator(".main-image")).toBeVisible();
 await page.waitForFunction(() =>
   document.querySelector(".studio-status")?.textContent?.includes("Ready"),
@@ -25,7 +31,9 @@ const neuralBounds = await page.locator(".neural-adjustments").boundingBox();
 const snapshotBounds = await page.locator(".variant-shelf").boundingBox();
 if (snapshotBounds.y < neuralBounds.y + neuralBounds.height)
   throw Error("Snapshots no longer sit below neural adjustments");
-await page.screenshot({ path: "docs/screenshots/studio-professional.png" });
+await page.screenshot({
+  path: resolve(evidenceDir, "studio-professional.png"),
+});
 await page.getByRole("button", { name: "Refine", exact: true }).click();
 await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("1");
@@ -33,7 +41,7 @@ await page.waitForFunction(() =>
   document.querySelector(".studio-status")?.textContent?.includes("Ready"),
 );
 await page.getByLabel("Before/After mode").selectOption("vertical");
-await page.screenshot({ path: "docs/screenshots/studio-comparison.png" });
+await page.screenshot({ path: resolve(evidenceDir, "studio-comparison.png") });
 await page.setViewportSize({ width: 1080, height: 840 });
 await page.getByRole("button", { name: "Adjust", exact: true }).click();
 const panelBounds = await page.locator(".inspector-content").boundingBox();
@@ -46,7 +54,7 @@ if (
   panelBounds.y + panelBounds.height
 )
   throw Error("Compact layout clips the color slider cards");
-await page.screenshot({ path: "docs/screenshots/studio-compact.png" });
+await page.screenshot({ path: resolve(evidenceDir, "studio-compact.png") });
 await page.setViewportSize({ width: 1536, height: 1024 });
 await page.getByLabel("Before/After mode").selectOption("processed");
 await page.getByRole("button", { name: "Masks", exact: true }).click();
@@ -56,7 +64,7 @@ await page.waitForFunction(() =>
   document.querySelector(".studio-status")?.textContent?.includes("Ready"),
 );
 await page.waitForTimeout(150);
-await page.screenshot({ path: "docs/screenshots/studio-masks.png" });
+await page.screenshot({ path: resolve(evidenceDir, "studio-masks.png") });
 await page.getByRole("button", { name: "Effects", exact: true }).click();
 await page.getByRole("slider", { name: "Vignette", exact: true }).fill("12");
 await page

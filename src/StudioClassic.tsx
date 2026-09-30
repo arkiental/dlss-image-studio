@@ -22,12 +22,12 @@ type Document = ReturnType<typeof useStudio>;
 export function QuickLook({ d }: { d: Document }) {
   const s = d.state;
   const controls = [
-    ["contrast", "Contrast", Sun, "#e3aa52"],
-    ["gamma", "Gamma", Activity, "#73b0cb"],
-    ["vibrance", "Vibrance", Aperture, "#50a34a"],
-    ["brightness", "Brightness", Sun, "#d38c29"],
-    ["saturation", "Saturation", Droplet, "#ef2c6e"],
-    ["hue", "Hue", Rainbow, "#e3aa52"],
+    ["contrast", "Contrast", Sun],
+    ["gamma", "Gamma", Activity],
+    ["vibrance", "Vibrance", Aperture],
+    ["brightness", "Brightness", Sun],
+    ["saturation", "Saturation", Droplet],
+    ["hue", "Hue", Rainbow],
   ] as const;
   return (
     <div className="quick-look">
@@ -66,13 +66,12 @@ export function QuickLook({ d }: { d: Document }) {
         </div>
       </div>
       <div className="classic-color-grid">
-        {controls.map(([key, label, Icon, accent]) => (
+        {controls.map(([key, label, Icon]) => (
           <div className={key === "hue" ? "hue-control" : ""} key={key}>
             <Control
               card
               label={label}
               icon={<Icon size={28} strokeWidth={1.6} />}
-              accent={accent}
               value={s[key]}
               min={key === "hue" ? -180 : -100}
               max={key === "hue" ? 180 : 100}

@@ -2,6 +2,8 @@
 // Pixel values are test markers, never evidence of neural image quality.
 import { chromium, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+const studioUrl = new URL(process.env.STUDIO_URL || "http://127.0.0.1:1420");
+studioUrl.searchParams.set("demo", "1");
 const browser = await chromium.launch({
   executablePath:
     process.env.BROWSER_EXE ||
@@ -110,7 +112,7 @@ await page.addInitScript(() => {
     },
   };
 });
-await page.goto("http://127.0.0.1:1420/?demo=1");
+await page.goto(studioUrl.href);
 const ready = () =>
   expect(page.locator(".studio-status")).toContainText("Ready");
 await ready();
