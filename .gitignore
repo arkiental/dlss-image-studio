@@ -7,3 +7,10 @@ third_party/streamline/bin/
 *.log
 test-results/
 playwright-report/
+release/
+verification/
+tools/
+app/
+LOCAL-SETUP.txt
+Build-App.cmd
+Start-Development.cmd

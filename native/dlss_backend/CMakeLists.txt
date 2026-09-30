@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(studio_backend LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/color.hlsl" STUDIO_SHADER)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/shader.inc" "R\"HLSL(${STUDIO_SHADER})HLSL\"")
 add_library(studio_backend STATIC src/backend.cpp)

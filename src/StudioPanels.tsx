@@ -1582,8 +1582,8 @@ export function SettingsPanel({
         </dl>
         <p className="muted">
           Neural rendering uses a separately installed Visual Enhancer v13.2
-          runtime. It accepts 8-bit display-referred images; float/HDR finishing
-          remains separate.
+          runtime. It accepts 8-bit and 16-bit SDR images. HDR imports use a
+          labeled, reversible SDR working copy; original float data is preserved.
         </p>
         <button
           disabled={!isTauri()}

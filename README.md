@@ -4,6 +4,22 @@ A focused Windows render-finishing application: open a render, enhance, refine, 
 
 ![Render-finishing workspace](docs/screenshots/studio-professional.png)
 
+## Download and get started
+
+**[Download Windows Setup or the portable ZIP](https://github.com/arkiental/dlss-image-studio/releases/latest)**
+
+Setup installs Studio and WebView2. The app and 50 creative LUTs are included;
+no developer tools are needed. **Neural enhancement requires a separately installed
+Visual Enhancer v13.2 runtime. Its license does not allow us to bundle it without
+written permission.** Conventional finishing works with Neural Adjustments off.
+
+[Installation](docs/INSTALLATION.md) · [User guide](docs/USER_GUIDE.md) ·
+[Troubleshooting](docs/TROUBLESHOOTING.md) · [Contributing](CONTRIBUTING.md) ·
+[Changelog](CHANGELOG.md) · [Security](SECURITY.md)
+
+Windows 11 x64 / D3D12. Neural verification used an RTX 4090; compatibility with
+every RTX model is not established. Releases are currently unsigned.
+
 ## Version 0.2
 
 - The original two-column studio appearance: large viewport, colored slider cards, neural adjustments below the image, contextual advanced tabs, and snapshots/presets/history along the bottom.
@@ -51,3 +67,6 @@ npm run tauri build
 Browser development uses a separate worker for conventional finishing and UI checks. It cannot run the neural provider or native HDR/pass/project workflows. GitHub build success does not establish neural evaluation; that requires the separately installed runtime and physical compatible hardware.
 
 Open-source dependency notices ship in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Runtime components remain separately licensed. Independent application; not affiliated with NVIDIA or Merserk.
+
+Studio's original code is [ISC licensed](LICENSE), matching its package metadata.
+See [the release checklist](docs/RELEASING.md) for reproducible distribution.
