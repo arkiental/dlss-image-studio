@@ -94,6 +94,75 @@
 .nav-rail button.active {
   background: #303030;
 }
+.workspace-menu {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.studio .workspace-menu .workspace-menu-trigger {
+  display: inline-flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--control-border);
+  font-size: 12px;
+}
+.workspace-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 12;
+  width: 224px;
+  padding: 4px;
+  background: var(--surface-raised);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px #0009;
+}
+.studio .workspace-menu .workspace-menu-trigger.active {
+  border-color: #aaa;
+  background: #303030;
+}
+.workspace-menu-trigger[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
+}
+.studio .workspace-menu .workspace-menu-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+.studio .workspace-menu .workspace-menu-item[aria-checked="true"] {
+  background: #252525;
+  color: #fff;
+}
+.studio .workspace-menu .workspace-menu-item:hover {
+  background: #303030;
+}
+.studio .workspace-menu .workspace-menu-item:focus-visible {
+  outline: none;
+  border-color: #aaa;
+  background: #303030;
+}
+.workspace-menu button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.workspace-menu-check {
+  margin-left: auto;
+}
 .center-workspace {
   min-width: 0;
   min-height: 0;

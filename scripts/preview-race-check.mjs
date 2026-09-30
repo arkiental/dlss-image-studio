@@ -12,6 +12,12 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1536, height: 1024 } }),
   errors = [];
+const selectWorkspace = async (name) => {
+  await page
+    .getByRole("button", { name: "Workspace panels", exact: true })
+    .click();
+  await page.getByRole("menuitemradio", { name, exact: true }).click();
+};
 page.on("pageerror", (e) => errors.push(e.message));
 await page.addInitScript(() => {
   window.isTauri = true;
@@ -305,11 +311,11 @@ await expect(
 const restoredRequest = await page.evaluate(() => window.requests.at(-1));
 expect(restoredRequest.state.finish.lutId).toBe(saved.luts[0].id);
 // Batch continues and retains queue after leaving its workspace.
-await page.getByRole("button", { name: "Batch", exact: true }).click();
+await selectWorkspace("Batch");
 await page.evaluate(() => window.dialogPaths.push(["D:/a.png", "D:/b.png"]));
 await page.getByRole("button", { name: "Add renders", exact: true }).click();
 await page.getByRole("button", { name: "Adjust", exact: true }).click();
-await page.getByRole("button", { name: "Batch", exact: true }).click();
+await selectWorkspace("Batch");
 await expect(page.locator(".batch-list>div")).toHaveCount(2);
 await page.evaluate(() => window.dialogPaths.push("D:/outputs"));
 await page
@@ -318,7 +324,7 @@ await page
 await page.getByRole("button", { name: "Process all", exact: true }).click();
 await page.getByRole("button", { name: "Adjust", exact: true }).click();
 await page.waitForTimeout(250);
-await page.getByRole("button", { name: "Batch", exact: true }).click();
+await selectWorkspace("Batch");
 await expect(page.getByText("2 / 2 complete")).toBeVisible();
 await page.getByRole("button", { name: "Export", exact: true }).first().click();
 await ready();

@@ -46,7 +46,7 @@ The provider accepts 8-bit and 16-bit display-referred RGBA. High-bit-depth SDR 
 
 1. Open or drop a render. EXR, PNG, TIFF, JPEG and WebP are supported.
 2. Choose a style, refine Enhance/Tone/Color/Local, and compare with **B** or a split view.
-3. Capture named snapshots. Use Masks or Passes for targeted finishing.
+3. Capture named snapshots. Open the Panels menu for Masks, Passes, Presets or Batch.
 4. Export at original dimensions; use EXR to preserve HDR or 16-bit PNG/TIFF for an integer deliverable.
 
 **Ctrl+O** open · **Ctrl+S** project · **Ctrl+Shift+S** Save As · **Ctrl+E** export · **Ctrl+Z / Ctrl+Shift+Z** undo/redo · **F** fit · **1** 100% · **B** before/after · hold **\** original · **Space+drag / middle drag** pan · **P** presentation · **F11** fullscreen · **M** masks · **Z** inspector. **Tab** moves keyboard focus between controls.

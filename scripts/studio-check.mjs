@@ -57,7 +57,10 @@ if (
 await page.screenshot({ path: resolve(evidenceDir, "studio-compact.png") });
 await page.setViewportSize({ width: 1536, height: 1024 });
 await page.getByLabel("Before/After mode").selectOption("processed");
-await page.getByRole("button", { name: "Masks", exact: true }).click();
+await page
+  .getByRole("button", { name: "Workspace panels", exact: true })
+  .click();
+await page.getByRole("menuitemradio", { name: "Masks", exact: true }).click();
 await page.getByLabel("Add mask").selectOption("ellipse");
 await page.getByRole("slider", { name: "Feather", exact: true }).fill("35");
 await page.waitForFunction(() =>

@@ -1613,6 +1613,22 @@ export function SettingsPanel({
 }) {
   const [space, setSpace] = useState("auto");
   const dialog = useRef<HTMLElement>(null);
+  const shortcuts: [string, string[]][] = [
+    ["Open render", ["Ctrl", "O"]],
+    ["Save project", ["Ctrl", "S"]],
+    ["Save project as", ["Ctrl", "Shift", "S"]],
+    ["Export", ["Ctrl", "E"]],
+    ["Undo", ["Ctrl", "Z"]],
+    ["Redo", ["Ctrl", "Shift", "Z"]],
+    ["Fit image", ["F"]],
+    ["100% zoom", ["1"]],
+    ["Before / after", ["B"]],
+    ["Presentation", ["P"]],
+    ["Masks panel", ["M"]],
+    ["Zoom inspector", ["Z"]],
+    ["Full screen", ["F11"]],
+    ["Close dialog / presentation", ["Esc"]],
+  ];
   useEffect(() => {
     const previous = document.activeElement;
     dialog.current?.querySelector<HTMLButtonElement>("button")?.focus();
@@ -1659,46 +1675,62 @@ export function SettingsPanel({
           e.stopPropagation();
         }}
       >
-        <div className="panel-heading">
+        <div className="panel-heading settings-header">
           <h2>Studio Settings</h2>
-          <button aria-label="Close settings" onClick={close}>
-            <X />
+          <button
+            aria-label="Close settings"
+            title="Close settings · Esc"
+            onClick={close}
+          >
+            <X size={18} />
           </button>
         </div>
-        <dl>
-          <dt>GPU</dt>
-          <dd>{d.cap?.gpu || "Browser preview"}</dd>
-          <dt>Neural runtime</dt>
-          <dd>{d.cap?.neural_rendering || "Requires Windows"}</dd>
-        </dl>
-        <p className="muted">
-          Neural rendering uses a separately installed Visual Enhancer v13.2
-          runtime. It accepts 8-bit and 16-bit SDR images. HDR imports use a
-          labeled, reversible SDR working copy; original float data is
-          preserved.
-        </p>
-        <button
-          disabled={!isTauri()}
-          onClick={async () => {
-            try {
-              const folder = await open({ directory: true });
-              if (folder) {
-                await invoke("configure_neural_runtime", { folder });
-                d.setError(
-                  "Runtime configured. Change a neural setting to evaluate.",
-                );
-              }
-            } catch (e) {
-              d.setError(String(e));
-            }
-          }}
+        <section
+          className="settings-section"
+          aria-labelledby="settings-runtime"
         >
-          Choose runtime folder
-        </button>
-        <Group name="Color management" initial>
-          <label>
-            Input interpretation
-            <select value={space} onChange={(e) => setSpace(e.target.value)}>
+          <h3 id="settings-runtime">Runtime</h3>
+          <dl className="settings-facts">
+            <dt>GPU</dt>
+            <dd>{d.cap?.gpu || "Browser preview"}</dd>
+            <dt>Neural runtime</dt>
+            <dd>{d.cap?.neural_rendering || "Available in the Windows app"}</dd>
+          </dl>
+          <p className="settings-help">
+            Visual Enhancer v13.2 is installed separately. Neural rendering
+            accepts 8-bit and 16-bit SDR; HDR uses a reversible SDR copy and
+            preserves the original float data.
+          </p>
+          <div className="settings-actions">
+            <button
+              disabled={!isTauri()}
+              onClick={async () => {
+                try {
+                  const folder = await open({ directory: true });
+                  if (folder) {
+                    await invoke("configure_neural_runtime", { folder });
+                    d.setError(
+                      "Runtime configured. Change a neural setting to evaluate.",
+                    );
+                  }
+                } catch (e) {
+                  d.setError(String(e));
+                }
+              }}
+            >
+              Choose runtime folder
+            </button>
+          </div>
+        </section>
+        <section className="settings-section" aria-labelledby="settings-color">
+          <h3 id="settings-color">Color management</h3>
+          <label className="settings-control">
+            <span>Input interpretation</span>
+            <select
+              aria-label="Input interpretation"
+              value={space}
+              onChange={(e) => setSpace(e.target.value)}
+            >
               {[
                 ["auto", "Embedded ICC / format default"],
                 ["srgb", "sRGB"],
@@ -1713,21 +1745,54 @@ export function SettingsPanel({
               ))}
             </select>
           </label>
-          <button disabled={!d.info?.path} onClick={() => d.reloadSpace(space)}>
-            Reload with this interpretation
-          </button>
-          <small>
-            Working space: scene-linear sRGB, 32-bit float. EXR defaults to
-            linear sRGB; choose ACEScg when appropriate. Preview clips only for
-            display. Linear EXR exports retain HDR. ACES display transforms, AgX
-            and Filmic are not bundled.
-          </small>
-        </Group>
-        <p>
-          F: Fit · 1: 100% · B: before/after · hold \: original · Space-drag or
-          middle drag: pan · P: presentation · M: masks · Ctrl+Z: undo ·
-          Ctrl+Shift+Z: redo · Ctrl+S: project · Ctrl+E: export
-        </p>
+          <div className="settings-actions">
+            <button
+              disabled={!d.info?.path}
+              onClick={() => d.reloadSpace(space)}
+            >
+              Reload with this interpretation
+            </button>
+          </div>
+          <p className="settings-help">
+            Working space: linear sRGB, 32-bit float. EXR defaults to linear
+            sRGB; select ACEScg for ACEScg sources. Preview clips for display;
+            linear EXR exports retain HDR. ACES, AgX and Filmic display
+            transforms are not bundled.
+          </p>
+        </section>
+        <section
+          className="settings-section"
+          aria-labelledby="settings-keyboard"
+        >
+          <h3 id="settings-keyboard">Keyboard shortcuts</h3>
+          <div className="settings-shortcuts">
+            {shortcuts.map(([action, keys]) => (
+              <div className="settings-shortcut" key={action}>
+                <span>{action}</span>
+                <span className="shortcut-keys">
+                  {keys.map((key) => (
+                    <kbd key={key}>{key}</kbd>
+                  ))}
+                </span>
+              </div>
+            ))}
+            <div className="settings-shortcut">
+              <span>Peek original</span>
+              <span className="shortcut-keys">
+                Hold <kbd>\</kbd>
+              </span>
+            </div>
+            <div className="settings-shortcut">
+              <span>Pan image</span>
+              <span className="shortcut-keys">
+                <kbd>Space</kbd> + drag
+              </span>
+            </div>
+          </div>
+          <p className="settings-help">
+            Middle-drag also pans. Focus the image view to use image shortcuts.
+          </p>
+        </section>
       </section>
     </div>
   );

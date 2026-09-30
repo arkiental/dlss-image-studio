@@ -10,10 +10,6 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
-  Brush,
-  Layers,
-  Bookmark,
-  Images,
   Settings,
   Minus,
   Square,
@@ -34,13 +30,12 @@ import { NeuralAdjustments, QuickExport } from "./StudioClassic";
 import { RangeInput } from "./RangeInput";
 import { Scopes } from "./Scopes";
 import { Panels, SettingsPanel, Variants } from "./StudioPanels";
+import { WorkspaceMenu } from "./WorkspaceMenu";
 import { useStudio, unpack } from "./useStudio";
 import { defaults, clamp } from "./state";
 import type { Finish, MaskLayer } from "./finish";
 import "./studio.css";
 import "./classic.css";
-const titles = ["Masks", "Render Passes", "Presets", "Batch"];
-const navIcons = [Brush, Layers, Bookmark, Images];
 export default function Studio() {
   const d = useStudio(),
     s = d.state,
@@ -288,6 +283,7 @@ export default function Studio() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+      if ((e.target as HTMLElement).closest(".workspace-menu")) return;
       if (e.key === "Escape") {
         setHidden(false);
         setSettings(false);
@@ -675,11 +671,13 @@ export default function Studio() {
           Save project
         </button>
         <button
+          className="title-action settings-button"
           title="Settings"
           aria-label="Settings"
           onClick={() => setSettings(true)}
         >
           <Settings size={18} />
+          <span>Settings</span>
         </button>
         {isTauri() && (
           <>
@@ -1053,23 +1051,13 @@ export default function Studio() {
           </div>
           <aside className="pro-inspector">
             <nav className="nav-rail">
-              {titles.map((name, i) => {
-                const Icon = navIcons[i];
-                return (
-                  <button
-                    key={name}
-                    className={workspace === name ? "active" : ""}
-                    title={name}
-                    onClick={() => {
-                      setWorkspace(name);
-                      if (name === "Presets") setBottom("Presets");
-                    }}
-                  >
-                    <Icon size={21} />
-                    <span>{name === "Render Passes" ? "Passes" : name}</span>
-                  </button>
-                );
-              })}
+              <WorkspaceMenu
+                workspace={workspace}
+                onSelect={(name) => {
+                  setWorkspace(name);
+                  if (name === "Presets") setBottom("Presets");
+                }}
+              />
               <div className="rail-spacer" />
               <button
                 title="Undo · Ctrl+Z"

@@ -65,9 +65,9 @@ and deep EXR are not included. Review [supported features and limits](PROFESSION
 additional `.cube` files you have permission to use. LUTs are display-oriented;
 read [the LUT guide](LUTS.md) before applying them to HDR renders.
 
-Open Masks for shape, brush, gradient, color or luminance selections. Name masks,
+Open **Panels > Masks** for shape, brush, gradient, color or luminance selections. Name masks,
 adjust feather/opacity and use combine/subtract/intersect as needed. Mask edits are
-non-destructive. Render Passes imports individual passes and supported flat EXR
+non-destructive. **Panels > Passes** imports individual passes and supported flat EXR
 channels for inspection, selection and supported depth effects. Cryptomatte and
 some advanced pass features are not implemented; no unsupported control is promised.
 
@@ -79,7 +79,7 @@ moving computers. Custom LUT assets are embedded in projects/presets. Save
 named snapshots in the bottom strip; history and `Ctrl+Z` / `Ctrl+Shift+Z` help
 compare and undo changes. A project is not a replacement for a source-image backup.
 
-Use Batch to add images, apply shared settings or per-image overrides, select an
+Use **Panels > Batch** to add images, apply shared settings or per-image overrides, select an
 output folder and process the queue. Check errors individually. The batch queue
 persists while the app stays open; save important image edits as projects.
 
