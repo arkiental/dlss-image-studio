@@ -2,7 +2,7 @@
 
 A focused Windows render-finishing application: open a render, enhance, refine, compare, and export. Built with Tauri 2, React, TypeScript, Rust, and a D3D12 neural-provider bridge.
 
-![Render-finishing workspace](docs/screenshots/studio-professional.png)
+![Render-finishing workspace](docs/screenshots/studio-workflow.png)
 
 ## Download and get started
 
@@ -22,7 +22,8 @@ every RTX model is not established. Releases are currently unsigned.
 
 ## Version 0.2
 
-- A compact, monochrome two-column studio: large viewport, icon-labeled slider cards, neural adjustments below the image, contextual advanced tabs, and snapshots/presets/history along the bottom.
+- A compact, monochrome two-column studio: large viewport, icon-labeled slider cards, neural adjustments below the image, Workspace tabs for masks/passes/presets/batch, and snapshots/presets/history along the bottom.
+- Find adjustment / Ctrl+K, explicit Before/After controls, source and preview labels, resizable detail selection, named history and snapshot rename/deletion Undo.
 - Wheel zoom, numerical zoom, Fit/Fill, pan, vertical/horizontal before-after splits, temporary original view, a floating 1–10× inspector, pixel grid, presentation mode and fullscreen.
 - Existing **real neural rendering** and neural styles, intensity, tone, structure and evaluation resolution. Conventional processing stays separate.
 - Scene-linear float finishing: exposure and tonal ranges, RGB/channel curves, white balance, three-way grading, denoise, sharpening, clarity, texture and broad local contrast.
@@ -46,8 +47,10 @@ The provider accepts 8-bit and 16-bit display-referred RGBA. High-bit-depth SDR 
 
 1. Open or drop a render. EXR, PNG, TIFF, JPEG and WebP are supported.
 2. Choose a style, refine Enhance/Tone/Color/Local, and compare with **B** or a split view.
-3. Capture named snapshots. Open the Panels menu for Masks, Passes, Presets or Batch.
+3. Capture named snapshots. Open **Workspace** for Masks, Passes, Presets or Batch.
 4. Export at original dimensions; use EXR to preserve HDR or 16-bit PNG/TIFF for an integer deliverable.
+
+Use **Find adjustment** or **Ctrl+K** to open a control or Workspace action.
 
 **Ctrl+O** open · **Ctrl+S** project · **Ctrl+Shift+S** Save As · **Ctrl+E** export · **Ctrl+Z / Ctrl+Shift+Z** undo/redo · **F** fit · **1** 100% · **B** before/after · hold **\** original · **Space+drag / middle drag** pan · **P** presentation · **F11** fullscreen · **M** masks · **Z** inspector. **Tab** moves keyboard focus between controls.
 

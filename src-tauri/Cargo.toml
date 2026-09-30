@@ -1,6 +1,6 @@
 [package]
 name = "dlss-image-studio"
-version = "0.2.1"
+version = "0.2.2"
 description = "Windows image studio with native D3D12 processing"
 edition = "2021"
 rust-version = "1.85"

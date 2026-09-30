@@ -31,7 +31,7 @@ certify neural execution. Avoid tests that merely repeat the implementation.
 
 ## Design and engineering boundaries
 
-- Keep the image dominant, the original dark/gold styling, and controls compact.
+- Keep the image dominant, near-black/white styling, square corners and compact controls.
 - Preserve source precision, alpha, output dimensions and non-destructive state.
 - Keep neural controls separate from conventional filters; never silently fall back.
 - Reject stale asynchronous previews and keep preview, inspector and export consistent.

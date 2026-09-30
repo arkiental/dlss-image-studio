@@ -7,6 +7,7 @@ third_party/streamline/bin/
 *.log
 test-results/
 playwright-report/
+ui-evidence/
 release/
 verification/
 tools/

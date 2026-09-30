@@ -45,8 +45,8 @@ npm run tauri build
 Outputs:
 
 - `src-tauri/target/release/dlss-image-studio.exe`
-- `src-tauri/target/release/bundle/nsis/DLSS Image Studio_0.2.1_x64-setup.exe`
-- `src-tauri/target/release/bundle/msi/DLSS Image Studio_0.2.1_x64_en-US.msi`
+- `src-tauri/target/release/bundle/nsis/DLSS Image Studio_0.2.2_x64-setup.exe`
+- `src-tauri/target/release/bundle/msi/DLSS Image Studio_0.2.2_x64_en-US.msi`
 
 The Windows GitHub Actions workflow builds NSIS Setup and a portable ZIP with checksums. Pushing a version tag publishes the tested release assets. See docs/RELEASING.md. It does not run GPU tests on hosted runners without a suitable physical GPU. Download and run the native smoke test on the target machine.
 

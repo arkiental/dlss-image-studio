@@ -3,7 +3,7 @@
 ## Download
 
 Get the Windows x64 release from [GitHub Releases](https://github.com/arkiental/dlss-image-studio/releases/latest).
-Choose **DLSS-Image-Studio-0.2.1-Windows-x64-Setup.exe** for the easiest installation.
+Choose **DLSS-Image-Studio-0.2.2-Windows-x64-Setup.exe** for the easiest installation.
 The automatic “Source code” archives are for developers, not installers.
 
 1. Run Setup and follow the wizard. Installation is per user.
@@ -27,7 +27,7 @@ do not disable Windows security protections.
 
 ## Portable ZIP
 
-Extract **DLSS-Image-Studio-0.2.1-Windows-x64-Portable.zip** to a writable folder
+Extract **DLSS-Image-Studio-0.2.2-Windows-x64-Portable.zip** to a writable folder
 and run `dlss-image-studio.exe`. Keep the included guides and license notices.
 The executable embeds the UI and the 50 creative LUTs.
 
@@ -63,7 +63,7 @@ Other runtime versions are unsupported until tested. See [integration details](.
 Compare a downloaded file against `SHA256SUMS.txt` from the same release:
 
 ```powershell
-Get-FileHash .\DLSS-Image-Studio-0.2.1-Windows-x64-Setup.exe -Algorithm SHA256
+Get-FileHash .\DLSS-Image-Studio-0.2.2-Windows-x64-Setup.exe -Algorithm SHA256
 ```
 
 Close Studio before updating. Run the newer installer, or extract a newer portable

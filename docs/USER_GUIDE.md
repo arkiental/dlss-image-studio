@@ -16,7 +16,7 @@
 
 Use the mouse wheel or zoom slider to zoom. Fit shows the whole image; Fill fills
 the viewport. Pan with middle mouse or Space + left drag. The floating detail
-inspector examines the same completed processed image, can be moved outside the
+inspector follows the selected Before/After preview and temporary original view, can be moved outside the
 image area, and supports 1–10× magnification. Tiny images use the minimum
 magnification needed to keep the sampled area inside the image. Drag the selection
 box to move it or drag a corner or edge handle to resize it. Arrow keys move the

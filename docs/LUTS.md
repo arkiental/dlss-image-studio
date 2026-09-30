@@ -1,7 +1,7 @@
 # LUT color grading
 
 Open **Refine → LUTs**. Choose one of the 50 included creative looks or import a
-`.cube` file. Enable LUT bypasses/enables the grade; the existing gold strength
+`.cube` file. Enable LUT bypasses/enables the grade; the strength
 slider blends it from 0–100%. LUTs are conventional color grading, separate from
 the neural enhancement controls. Snapshots, history, presets, batch settings and
 projects retain the LUT selection and strength.
