@@ -102,9 +102,9 @@ export function NeuralAdjustments({
         <label
           className="neural-enable"
           title={
-            d.info?.hdr || (d.info?.bitDepth || 8) > 8
-              ? "Neural runtime supports 8-bit SDR sources only"
-              : "Enable the separately installed neural runtime"
+            d.info?.neuralSupported === false
+              ? "HDR/out-of-gamut source: use a tone-mapped sRGB copy. Original float data is preserved."
+              : "Neural rendering supports 8-bit and 16-bit SDR input; the original is preserved"
           }
         >
           <input
@@ -112,7 +112,8 @@ export function NeuralAdjustments({
             type="checkbox"
             checked={s.neural.enabled}
             disabled={
-              !isTauri() || !!d.info?.hdr || (d.info?.bitDepth || 8) > 8
+              !isTauri() ||
+              (d.info?.neuralSupported === false && !s.neural.toneMap)
             }
             onChange={(e) =>
               d.setState((p) => ({
@@ -170,6 +171,28 @@ export function NeuralAdjustments({
           Reset
         </button>
       </header>
+      {(d.info?.neuralSupported === false || s.neural.toneMap) && (
+        <div className="neural-input-mode">
+          <span>
+            {s.neural.toneMap
+              ? "Neural input: tone-mapped SDR · 16-bit"
+              : "HDR source · SDR input required"}
+          </span>
+          <button
+            title="Create a non-destructive 16-bit sRGB neural input using Reinhard highlight compression. Negative values are clipped in this working copy. The original HDR image is unchanged. Neural output is SDR."
+            onClick={() => {
+              const toneMap = !s.neural.toneMap;
+              d.setError("");
+              d.setState((p) => ({
+                ...p,
+                neural: { ...p.neural, toneMap, enabled: toneMap },
+              }));
+            }}
+          >
+            {s.neural.toneMap ? "Use original HDR" : "Tone-map for neural"}
+          </button>
+        </div>
+      )}
       <div className="neural-control-grid">
         {(["intensity", "tone", "structure"] as const).map((key, i) => {
           const Icon = [CircleDot, Circle, Triangle][i];

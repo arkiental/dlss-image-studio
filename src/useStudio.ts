@@ -18,6 +18,7 @@ export type SourceInfo = {
   bitDepth: number;
   space: string;
   hdr: boolean;
+  neuralSupported?: boolean;
   passes: string[];
   path: string;
   icc: boolean;
@@ -272,11 +273,11 @@ export function useStudio() {
       if (!keep) {
         resetDocument();
         const s = initial();
-        s.neural.enabled = !(meta.hdr || meta.bitDepth > 8) && s.neural.enabled;
+        s.neural.enabled = meta.neuralSupported !== false && s.neural.enabled;
         setState(s);
-        if (meta.hdr || meta.bitDepth > 8)
+        if (meta.neuralSupported === false)
           setError(
-            "Float source preserved. Neural rendering is off because the runtime accepts 8-bit display-referred images.",
+            "HDR source preserved. Choose ‘Tone-map for neural’ under Neural Adjustments to enhance a 16-bit SDR working copy.",
           );
       }
     } catch (e) {

@@ -29,7 +29,13 @@ def main():
             try:
                 request = json.loads(line)
                 w, h = request['width'], request['height']
+                sample_bytes = request.get('sample_bytes', 1)
+                if sample_bytes not in (1, 2):
+                    raise ValueError('Unsupported neural sample size')
+                dtype = np.dtype('<u2') if sample_bytes == 2 else np.dtype('uint8')
                 if request['source_bytes']:
+                    if request['source_bytes'] != w * h * 4 * sample_bytes:
+                        raise ValueError('Invalid neural source byte count')
                     raw = bytearray(request['source_bytes'])
                     view = memoryview(raw)
                     offset = 0
@@ -38,9 +44,9 @@ def main():
                         if not count:
                             raise EOFError('Incomplete source pixels')
                         offset += count
-                    source = np.frombuffer(raw, dtype=np.uint8).reshape(h, w, 4)
+                    source = np.frombuffer(raw, dtype=dtype).reshape(h, w, 4)
                     input_key = None
-                if source is None or source.shape != (h, w, 4):
+                if source is None or source.shape != (h, w, 4) or source.dtype != dtype:
                     raise ValueError('Missing current source')
                 controls = request['controls']
                 sw, sh = request['small_width'], request['small_height']

@@ -12,7 +12,11 @@ export type Adjustments = {
 export interface StudioState extends Adjustments {
   finish: Finish;
   style: Style;
-  neural: { enabled: boolean; style: "Default" | "Natural" | "Cinematic" };
+  neural: {
+    enabled: boolean;
+    style: "Default" | "Natural" | "Cinematic";
+    toneMap?: boolean;
+  };
   processingResolution: number;
   local: {
     scope: "image" | "region";

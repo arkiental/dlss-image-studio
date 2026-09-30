@@ -78,7 +78,8 @@ await page.addInitScript(() => {
         return {
           width: w,
           height: h,
-          bitDepth: 8,
+          bitDepth: window.sourceDepth || 8,
+          neuralSupported: !window.sourceHdrRange,
           space: "srgb",
           hdr: false,
           passes: [],
@@ -246,16 +247,14 @@ if (
   await page.getByRole("button", { name: "Tone", exact: true }).click();
 await page.getByRole("slider", { name: "Exposure", exact: true }).fill("0.5");
 await page.getByRole("button", { name: "LUTs", exact: true }).click();
-await page
-  .getByLabel("Import CUBE LUT")
-  .setInputFiles({
-    name: "Project LUT.cube",
-    mimeType: "text/plain",
-    buffer: Buffer.from(
-      JSON.parse(readFileSync("tests/fixtures/lut-conformance.json", "utf8"))
-        .cube,
-    ),
-  });
+await page.getByLabel("Import CUBE LUT").setInputFiles({
+  name: "Project LUT.cube",
+  mimeType: "text/plain",
+  buffer: Buffer.from(
+    JSON.parse(readFileSync("tests/fixtures/lut-conformance.json", "utf8"))
+      .cube,
+  ),
+});
 await expect(
   page.getByLabel("LUT preset").locator("option:checked"),
 ).toHaveText("Project LUT");
@@ -326,6 +325,60 @@ await page
   .last()
   .click();
 expect(await page.evaluate(() => window.exports.length)).toBe(1);
+// High-bit-depth SDR sources must retain real neural controls on load/reload.
+await page.evaluate(() => {
+  window.sourceDepth = 16;
+  window.dialogPaths.push("D:/renders/16-bit.png");
+});
+await page.getByRole("button", { name: "Open Render", exact: true }).click();
+await ready();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeEnabled();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeChecked();
+await page.getByRole("slider", { name: "Intensity", exact: true }).fill("1.7");
+await ready();
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.local.intensity),
+).toBe(1.7);
+await page.evaluate(() => {
+  window.sourceHdrRange = true;
+  window.dialogPaths.push("D:/renders/hdr.exr");
+});
+await page.getByRole("button", { name: "Open Render", exact: true }).click();
+await ready();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeDisabled();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).not.toBeChecked();
+await expect(page.getByText(/HDR source preserved/)).toBeVisible();
+await page
+  .getByRole("button", { name: "Tone-map for neural", exact: true })
+  .click();
+await ready();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeEnabled();
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeChecked();
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.neural.toneMap),
+).toBe(true);
+await page.getByRole("button",{name:"Reset all",exact:true}).click();
+await ready();
+expect(await page.evaluate(()=>window.requests.at(-1).state.neural.toneMap)).toBe(true);
+await page
+  .getByRole("button", { name: "Use original HDR", exact: true })
+  .click();
+await ready();
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.neural.enabled),
+).toBe(false);
 await browser.close();
 if (errors.length) throw Error(errors.join("\n"));
 console.log(

@@ -18,6 +18,7 @@ pub struct Info {
     pub bit_depth: u16,
     pub space: String,
     pub hdr: bool,
+    pub neural_supported: bool,
     pub passes: Vec<String>,
     pub path: String,
     pub icc: bool,
@@ -172,6 +173,72 @@ pub fn valid_size(w: u32, h: u32) -> Result<(), String> {
     }
 }
 impl Frame {
+    pub fn tone_mapped(&self) -> Self {
+        let mut mapped = self.clone();
+        mapped.px.par_chunks_mut(4).for_each(|p| {
+            // Explicit SDR working copy: Reinhard compression using max RGB
+            // preserves positive RGB ratios. Negative/out-of-gamut values clip.
+            let scale = 1. / (1. + p[0].max(p[1]).max(p[2]).max(0.));
+            for v in &mut p[..3] {
+                *v = v.max(0.) * scale;
+            }
+        });
+        mapped
+    }
+    pub fn neural_supported(&self) -> bool {
+        self.px
+            .chunks_exact(4)
+            // ICC round-trips can put sRGB white at 1.000048. Permit boundary
+            // round-off, not scene HDR content; the original stays immutable.
+            .all(|p| {
+                p[..3]
+                    .iter()
+                    .all(|v| v.is_finite() && *v >= -0.0001 && *v <= 1.0001)
+            })
+    }
+    pub fn neural16(&self) -> Result<Vec<u8>, String> {
+        if !self.neural_supported() {
+            return Err("This source has HDR or out-of-gamut values beyond the neural runtime's 0–1 range. Use an explicitly tone-mapped sRGB copy for neural enhancement; the original float source is preserved.".into());
+        }
+        Ok(self
+            .px
+            .par_chunks(4)
+            .flat_map_iter(|p| {
+                [enc(p[0]), enc(p[1]), enc(p[2]), p[3]]
+                    .into_iter()
+                    .flat_map(|v| ((v.clamp(0., 1.) * 65535.).round() as u16).to_le_bytes())
+            })
+            .collect())
+    }
+    pub fn from_neural16(&self, bytes: &[u8], local: &crate::Local) -> Result<Self, String> {
+        if bytes.len() != self.px.len() * 2 {
+            return Err("Invalid 16-bit neural output".into());
+        }
+        let mut result = self.clone();
+        result.px.par_chunks_mut(4).enumerate().for_each(|(i, p)| {
+            let weight = if matches!(local.scope, crate::AdjustmentScope::Image) {
+                1.
+            } else {
+                let r = &local.region;
+                let u = (i as u32 % self.w) as f32 / self.w as f32;
+                let v = (i as u32 / self.w) as f32 / self.h as f32;
+                (((u - r.x) / r.width)
+                    .min((r.x + r.width - u) / r.width)
+                    .min((v - r.y) / r.height)
+                    .min((r.y + r.height - v) / r.height)
+                    * 20.)
+                    .clamp(0., 1.)
+            };
+            for k in 0..3 {
+                let offset = (i * 4 + k) * 2;
+                let value =
+                    lin(u16::from_le_bytes([bytes[offset], bytes[offset + 1]]) as f32 / 65535.);
+                p[k] += (value - p[k]) * weight;
+            }
+            // Original float alpha is retained, including sub-16-bit precision.
+        });
+        Ok(result)
+    }
     pub fn rgba8(w: u32, h: u32, bytes: &[u8]) -> Self {
         Self {
             w,
@@ -453,6 +520,7 @@ pub fn read(path: &Path, space: &str) -> Result<(Frame, Info, BTreeMap<String, F
             input.into()
         },
         hdr,
+        neural_supported: frame.neural_supported(),
         passes: passes.keys().cloned().collect(),
         path: path.to_string_lossy().into(),
         icc: has_icc,
@@ -1469,6 +1537,181 @@ mod tests {
                 0.1, 1., 0.2, 0.4, 0.8, 1., 0.5, 0.5, 0.5, 1., 0.1, 0.2, 0.3, 0.,
             ],
         }
+    }
+    #[test]
+    fn neural16_preserves_precision_alpha_and_region() {
+        let f = Frame {
+            w: 1024,
+            h: 1,
+            px: (0..1024)
+                .flat_map(|i| {
+                    let v = lin((20000. + i as f32) / 65535.);
+                    [v, v, v, 0.1234567]
+                })
+                .collect(),
+        };
+        let bytes = f.neural16().unwrap();
+        let unique: std::collections::BTreeSet<_> = bytes
+            .chunks_exact(8)
+            .map(|p| u16::from_le_bytes([p[0], p[1]]))
+            .collect();
+        assert_eq!(unique.len(), 1024);
+        let mut s = state();
+        s.local.scope = crate::AdjustmentScope::Image;
+        let decoded = f.from_neural16(&bytes, &s.local).unwrap();
+        for (a, b) in f.px.iter().zip(&decoded.px) {
+            assert!((a - b).abs() < 0.000001);
+        }
+        s.local.scope = crate::AdjustmentScope::Region;
+        s.local.region = crate::Rect {
+            x: 0.25,
+            y: 0.,
+            width: 0.5,
+            height: 1.,
+        };
+        let region = f.from_neural16(&vec![255; bytes.len()], &s.local).unwrap();
+        assert_eq!(&region.px[..4], &f.px[..4]);
+        assert!(region.px.chunks(4).all(|p| p[3] == 0.1234567));
+        let mut hdr = f.clone();
+        hdr.px[0] = 2.;
+        assert!(hdr.neural16().is_err());
+        assert_eq!(hdr.px[0], 2.);
+        hdr.px[0] = -0.1;
+        assert!(hdr.neural16().is_err());
+        let before = hdr.px.clone();
+        hdr.px[1] = 4.;
+        hdr.px[2] = 2.;
+        let mapped = hdr.tone_mapped();
+        assert!(mapped.neural_supported());
+        assert_eq!(mapped.px[0], 0.);
+        assert!((mapped.px[1] / mapped.px[2] - 2.).abs() < 0.00001);
+        assert_eq!(mapped.px[3], hdr.px[3]);
+        assert_eq!(hdr.px[0], before[0]);
+        assert_eq!(hdr.px[1], 4.);
+    }
+    #[test]
+    #[ignore = "Requires RTX GPU and separately installed Visual Enhancer runtime"]
+    fn neural16_pipeline_rtx() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let folder = root.join("verification/neural16");
+        std::fs::create_dir_all(&folder).unwrap();
+        let (mut f, _, _) = read(&root.join("public/sample-car.png"), "auto").unwrap();
+        for (i, p) in f.px.chunks_mut(4).enumerate() {
+            p[0] = (p[0] + (i % 31) as f32 * 0.000002).min(1.);
+        }
+        let path = folder.join("source16.png");
+        let _ = std::fs::remove_file(&path);
+        write(&path, &f, &output("png", 16)).unwrap();
+        let (f, info, passes) = read(&path, "auto").unwrap();
+        assert_eq!(info.bit_depth, 16);
+        assert!(
+            info.neural_supported,
+            "RGB range {:?}",
+            f.px.chunks_exact(4).flat_map(|p| p[..3].iter()).fold(
+                (f32::INFINITY, f32::NEG_INFINITY),
+                |(lo, hi), v| (lo.min(*v), hi.max(*v))
+            )
+        );
+        let mut b = crate::BACKEND.lock().unwrap();
+        b.source = f.display();
+        b.width = f.w;
+        b.height = f.h;
+        b.float_source = Some(f.clone());
+        b.source_id = 9916;
+        b.info = Some(info);
+        b.passes = passes;
+        b.neural_cache = None;
+        let mut s = state();
+        s.neural.enabled = true;
+        let a = b.render(&s, 0).unwrap();
+        assert_eq!(b.diagnostics["working_format"], "rgba16le");
+        assert_eq!(b.diagnostics["ngx"]["evaluate_result"], "0x00000001");
+        assert_ne!(a.px, f.px);
+        s.local.intensity = 2.;
+        s.local.tone = 2.;
+        let edited = b.render(&s, 0).unwrap();
+        assert_ne!(a.px, edited.px);
+        assert_eq!((edited.w, edited.h), (f.w, f.h));
+        assert!(edited
+            .px
+            .chunks(4)
+            .zip(f.px.chunks(4))
+            .all(|(a, b)| a[3] == b[3]));
+        let unique: std::collections::BTreeSet<_> = edited
+            .neural16()
+            .unwrap()
+            .chunks_exact(8)
+            .map(|p| u16::from_le_bytes([p[0], p[1]]))
+            .collect();
+        assert!(unique.len() > 256);
+        for (name, frame) in [("neural16-default", &a), ("neural16-adjusted", &edited)] {
+            let path = folder.join(format!("{name}.png"));
+            let _ = std::fs::remove_file(&path);
+            write(&path, frame, &output("png", 16)).unwrap();
+            let (restored, meta, _) = read(&path, "auto").unwrap();
+            assert_eq!(meta.bit_depth, 16);
+            let mae = restored
+                .display()
+                .iter()
+                .zip(frame.display())
+                .map(|(a, b)| (*a as f32 - b as f32).abs())
+                .sum::<f32>()
+                / frame.px.len() as f32;
+            assert!(mae < 0.01, "ICC-tagged PNG16 display roundtrip error {mae}");
+            println!("{name} PNG16 display roundtrip MAE: {mae}");
+        }
+        let repeat = b.render(&s, 0).unwrap();
+        assert_eq!(repeat.px, edited.px);
+        // Switching the same worker between sample formats must resend the source.
+        b.info.as_mut().unwrap().bit_depth = 8;
+        b.info.as_mut().unwrap().hdr = false;
+        b.render(&s, 0).unwrap();
+        assert_eq!(b.diagnostics["working_format"], "rgba8");
+        b.info.as_mut().unwrap().bit_depth = 16;
+        b.render(&s, 0).unwrap();
+        assert_eq!(b.diagnostics["working_format"], "rgba16le");
+        println!(
+            "Verified PNG16 {}x{}, {} distinct red sample values; diagnostics {}",
+            edited.w,
+            edited.h,
+            unique.len(),
+            b.diagnostics
+        );
+        let mut hdr = f.clone();
+        for p in hdr.px.chunks_mut(4) {
+            for v in &mut p[..3] {
+                *v *= 4.;
+            }
+        }
+        let hdr_path = folder.join("source-hdr.exr");
+        let _ = std::fs::remove_file(&hdr_path);
+        write(&hdr_path, &hdr, &output("exr", 32)).unwrap();
+        let (hdr, info, passes) = read(&hdr_path, "auto").unwrap();
+        assert!(!info.neural_supported);
+        b.source = hdr.display();
+        b.float_source = Some(hdr.clone());
+        b.info = Some(info);
+        b.passes = passes;
+        b.source_id += 1;
+        b.neural_cache = None;
+        assert!(b.render(&s, 0).is_err());
+        s.neural.tone_map = true;
+        let mapped = b.render(&s, 0).unwrap();
+        assert!(mapped.neural_supported());
+        assert!(b.float_source.as_ref().unwrap().px == hdr.px);
+        assert!(mapped
+            .px
+            .chunks(4)
+            .zip(hdr.px.chunks(4))
+            .all(|(a, b)| a[3] == b[3]));
+        let path = folder.join("hdr-neural-sdr.png");
+        let _ = std::fs::remove_file(&path);
+        write(&path, &mapped, &output("png", 16)).unwrap();
+        println!(
+            "Verified explicit HDR -> SDR neural working copy; original HDR preserved; {}",
+            b.diagnostics
+        );
+        b.worker = None;
     }
     fn output(format: &str, bit_depth: u8) -> Output {
         Output {

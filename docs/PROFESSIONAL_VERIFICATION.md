@@ -1,5 +1,26 @@
 # Version 0.2 verification
 
+## 30 September 2026: high-bit-depth neural correction
+
+The release-profile `neural16_pipeline_rtx` hardware test passed on RTX 4090 with
+the separately installed v13.2 runtime. It loaded a real 16-bit PNG, evaluated two
+neural settings, verified changes and alpha preservation, exported PNG16 at
+1560 × 1008, and retained 60,983 distinct red-channel values. ICC round-trip display
+error was 0.00182–0.00193 of an 8-bit code value on average. Switching the worker
+between 8-bit and 16-bit source formats also passed.
+
+The same test opened a 32-bit HDR EXR, verified rejection without opt-in, then
+evaluated its explicitly tone-mapped 16-bit SDR working copy. NGX create/evaluate
+returned `0x00000001`; the original HDR float samples and alpha were unchanged.
+This verifies SDR neural enhancement from HDR input, not unbounded HDR neural
+processing. Warm evaluation was about 24 ms at the tested dimensions.
+
+29 ordinary native tests and 38 frontend tests passed. The synthetic UI transport
+checks cover enabled 16-bit controls, HDR opt-in and reversal. Native installed-app
+inspection confirmed 16-bit source + enabled neural controls + Ready; the user
+stopped desktop input with Escape before the interactive slider check completed.
+HDR opt-in is covered by the automated UI check and physical-GPU test.
+
 Verified on 29 September 2026 on Windows with an NVIDIA GeForce RTX 4090, driver 591.86, and the separately installed Visual Enhancer v13.2 runtime. This report covers the implemented core workspace. It does not certify every requested professional feature; see the [implementation and limits matrix](PROFESSIONAL_WORKSPACE.md).
 
 ![Installed Windows build, original/processed split and inspector](screenshots/studio-native.jpg)
@@ -67,7 +88,7 @@ Windows file-dialog editing through the automation helper had a stale-element li
 
 ## Explicit boundaries
 
-The external neural interface accepts display-referred 8-bit pixels. It is disabled for HDR/high-bit-depth sources; the app does not silently quantize them. Float finishing and export retain their source precision and finite HDR range. Half-float export rejects values beyond ±65504 and directs the user to 32-bit EXR. Clipboard and the screen preview are display-referred 8-bit copies.
+The original verification above predates the 16-bit neural transport correction. The runtime actually accepts both RGBA8 and RGBA16. Studio now enables neural rendering for high-bit-depth SDR sources and preserves float alpha, using a 16-bit sRGB transfer into/out of the provider. Only HDR/extended-gamut values outside linear sRGB 0–1 remain blocked to prevent silent clipping. Float finishing retains finite HDR range; half-float export rejects values beyond ±65504. Clipboard and screen previews remain display-referred 8-bit copies.
 
 Cryptomatte decoding, OCIO/ACES display/AgX/Filmic transforms, optical bokeh, independent adjustment stacks per mask, advanced lens models and other items listed in the limits matrix remain unfinished. They are not presented as working controls. The app's EXR support covers flat layers/channels, not deep or offset-data-window EXRs. Source metadata round-trip is not implemented.
 

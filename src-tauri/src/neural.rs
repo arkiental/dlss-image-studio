@@ -7,11 +7,15 @@ use std::{
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Controls {
+    #[serde(default, rename = "toneMap")]
+    pub tone_map: bool,
     pub enabled: bool,
     pub style: String,
 }
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct Key {
+    pub tone_map: bool,
+    pub sample_bytes: u8,
     pub root: PathBuf,
     pub style: String,
     pub intensity: f32,
@@ -78,7 +82,7 @@ pub struct Worker {
     child: std::process::Child,
     sender: std::sync::mpsc::Sender<Request>,
     replies: std::sync::mpsc::Receiver<Reply>,
-    source: Option<(u64, u32, u32)>,
+    source: Option<(u64, u32, u32, u8, bool)>,
     thread: Option<std::thread::JoinHandle<()>>,
     _job: Job,
 }
@@ -153,9 +157,10 @@ impl Worker {
                     validate_status(&value)?;
                     let expected = request["width"].as_u64().unwrap_or(0)
                         * request["height"].as_u64().unwrap_or(0)
-                        * 4;
+                        * 4
+                        * request["sample_bytes"].as_u64().unwrap_or(1);
                     if expected == 0
-                        || expected > 256_000_000
+                        || expected > 512_000_000
                         || value["bytes"].as_u64() != Some(expected)
                     {
                         return Err("Unexpected neural output size".into());
@@ -190,6 +195,11 @@ pub fn render(
     height: u32,
     source_id: u64,
 ) -> Reply {
+    if ![1, 2].contains(&key.sample_bytes)
+        || source.len() as u64 != width as u64 * height as u64 * 4 * key.sample_bytes as u64
+    {
+        return Err("Invalid neural source format or byte count".into());
+    }
     interpreter(&key.root)?;
     let sw = ((width as f32 * key.resolution / 100.).round() as u32).max(1);
     let sh = ((height as f32 * key.resolution / 100.).round() as u32).max(1);
@@ -203,9 +213,9 @@ pub fn render(
     }
     let start = Instant::now();
     let current = worker.as_mut().unwrap();
-    let identity = (source_id, width, height);
+    let identity = (source_id, width, height, key.sample_bytes, key.tone_map);
     let send_source = current.source != Some(identity);
-    let request = serde_json::json!({"controls":key,"width":width,"height":height,"small_width":sw,"small_height":sh,"source_bytes":if send_source {source.len()} else {0}});
+    let request = serde_json::json!({"controls":key,"width":width,"height":height,"sample_bytes":key.sample_bytes,"small_width":sw,"small_height":sh,"source_bytes":if send_source {source.len()} else {0}});
     let result = current
         .sender
         .send((

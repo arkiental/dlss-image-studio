@@ -4,6 +4,32 @@ Studio uses an independently authored, isolated-process client for a **separatel
 
 ## Setup and interface
 
+### 16-bit input correction (2026-09-30)
+
+The v13.2 `DLSSFrameSession.process` implementation accepts `uint8` **and**
+`uint16` RGBA. The initial Studio adapter unnecessarily restricted it to 8-bit.
+High-bit-depth SDR sources now use little-endian RGBA16 over the worker pipe,
+with 16-bit output decoded directly to linear float finishing. The 8-bit D3D12
+color path is bypassed for those sources. Source-format changes invalidate the
+worker upload identity and neural cache. Alpha comes from the original float
+source, including when neural processing evaluates a smaller resolution.
+
+Neural eligibility is determined by actual RGB values in the linear-sRGB working
+space, allowing 0.0001 boundary tolerance for ICC round-off. High-bit-depth SDR
+PNG/TIFF and in-range float sources are eligible. True HDR/extended-gamut sources
+use the explicit **Tone-map for neural** action; this interface clips its own output
+to 0–1 and cannot honestly be described as an unbounded HDR neural pipeline.
+Source and pass data remain immutable. Screen previews and clipboard are 8-bit,
+but 16-bit file exports keep the neural output precision.
+
+The opt-in working-copy conversion uses max-RGB Reinhard compression in linear
+sRGB: positive RGB channels share the factor `1 / (1 + max(R,G,B,0))`; negative
+values clip to zero in this copy. Original HDR samples and alpha remain untouched.
+The choice is part of adjustment state, undo/history, snapshots and saved projects.
+The worker upload identity also includes this choice, preventing reuse of an
+unconverted source when switching modes. This is input preparation for the real
+neural provider, not a substitute for its evaluation.
+
 Obtain the complete [official v13.2 release](https://github.com/Merserk/dlss5-visual-enhancer/releases/tag/v13.2), review its licenses, and keep the extracted package intact. In Studio Settings, select the folder containing `src`, `bin` and `VE_CLI.exe`.
 
 The path is stored in `%LOCALAPPDATA%/DLSS Image Studio/neural-runtime.txt`; `STUDIO_NEURAL_RUNTIME` overrides it for testing. Selecting a runtime trusts its executable code. Studio does not download or modify it.

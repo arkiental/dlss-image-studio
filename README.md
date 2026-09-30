@@ -24,7 +24,7 @@ Install the complete [Visual Enhancer v13.2 package](https://github.com/Merserk/
 
 Neural controls use the provider's supported 0–2 ranges, default 1. DLSS Detail 0–100 maps to intensity 0–2. Resolution controls evaluation size without forcing an output resize. Failed neural evaluation blocks export of the failed state; the app never substitutes an ordinary filter.
 
-The verified provider accepts 8-bit display-referred images. Neural rendering is disabled for HDR/high-bit-depth sources, while conventional finishing retains their float precision. The app refuses a neural request on such a source rather than silently converting it to 8-bit.
+The provider accepts 8-bit and 16-bit display-referred RGBA. High-bit-depth SDR sources use a 16-bit sRGB neural transport and return directly to float finishing without the 8-bit color backend. Original float alpha and source data are retained. For HDR/extended-gamut sources, click **Tone-map for neural** below Neural Adjustments: this explicitly compresses highlights into a 16-bit SDR working copy before actual neural evaluation. **Use original HDR** returns to float editing with neural rendering off. The original source is never overwritten; neural output from the tone-mapped copy is SDR, not an unbounded HDR neural result.
 
 ## Quick use
 

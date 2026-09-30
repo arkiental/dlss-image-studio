@@ -243,6 +243,7 @@ export function Variants({
             onClick={() => {
               const s = defaults();
               s.neural.enabled = d.state.neural.enabled;
+              s.neural.toneMap = d.state.neural.toneMap;
               s.zoom = d.state.zoom;
               d.setState(s);
             }}

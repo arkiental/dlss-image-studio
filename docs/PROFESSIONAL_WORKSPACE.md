@@ -38,7 +38,7 @@ The source frame and imported passes are immutable, scene-linear RGBA float arra
 The processing order is explicit:
 
 1. Decode and apply the selected/embedded input transform; leave data passes untransformed.
-2. Optionally evaluate the verified external neural provider (eligible 8-bit sources only), caching by source/style/parameters/resolution.
+2. Optionally evaluate the verified external neural provider (8/16-bit SDR transport), caching by source/sample format/style/parameters/resolution. High-bit-depth input returns directly to float finishing; source values outside linear sRGB 0–1 require an explicit tone-mapped copy.
 3. Denoise, sharpen and apply frequency-separated conventional detail.
 4. Apply linear exposure/tone/color, grading and display-domain curves with unbounded endpoints.
 5. Apply bloom, depth effects, vignette and grain.

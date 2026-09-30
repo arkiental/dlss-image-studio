@@ -129,18 +129,25 @@ impl Backend {
             return Err("Open a render first".into());
         }
         let input = if s.neural.enabled {
-            if self.info.as_ref().is_some_and(|i| i.hdr || i.bit_depth > 8) {
-                return Err("Neural runtime accepts 8-bit display-referred images only. Disable neural rendering to preserve this source's HDR/16-bit data, or export an explicit 8-bit sRGB copy first.".into());
+            if s.neural.tone_map || self.info.as_ref().is_some_and(|i| i.hdr || i.bit_depth > 8) {
+                let source = if s.neural.tone_map {
+                    original.tone_mapped().neural16()?
+                } else {
+                    original.neural16()?
+                };
+                let pixels = self.neural_pixels(s, &source, 2)?;
+                original.from_neural16(&pixels, &s.local)?
+            } else {
+                let mut neutral = s.clone();
+                neutral.contrast = 0.;
+                neutral.gamma = 0.;
+                neutral.vibrance = 0.;
+                neutral.brightness = 0.;
+                neutral.saturation = 0.;
+                neutral.hue = 0.;
+                neutral.finish = None;
+                finish::Frame::rgba8(self.width, self.height, &self.process(&neutral)?)
             }
-            let mut neutral = s.clone();
-            neutral.contrast = 0.;
-            neutral.gamma = 0.;
-            neutral.vibrance = 0.;
-            neutral.brightness = 0.;
-            neutral.saturation = 0.;
-            neutral.hue = 0.;
-            neutral.finish = None;
-            finish::Frame::rgba8(self.width, self.height, &self.process(&neutral)?)
         } else {
             original.clone()
         };
@@ -155,30 +162,7 @@ impl Backend {
         let p = s.params()?;
         let mut input = self.source.clone();
         if s.neural.enabled {
-            let root = neural::configured_root().ok_or("Neural runtime not configured. Select your Visual Enhancer v13.2 folder in Settings, or explicitly turn neural rendering off.")?;
-            neural::interpreter(&root)?;
-            let key = neural::Key {
-                root,
-                style: s.neural.style.clone(),
-                intensity: s.local.intensity,
-                tone: s.local.tone,
-                structure: s.local.structure,
-                resolution: s.processing_resolution,
-            };
-            if self.neural_cache.as_ref().map(|(k, _)| k) != Some(&key) {
-                let (pixels, diagnostic) = neural::render(
-                    &mut self.worker,
-                    &key,
-                    &self.source,
-                    self.width,
-                    self.height,
-                    self.source_id,
-                )?;
-                app_log(&format!("[NEURAL] {}", diagnostic));
-                self.diagnostics = diagnostic;
-                self.neural_cache = Some((key, pixels));
-            }
-            input = self.neural_cache.as_ref().unwrap().1.clone();
+            input = self.neural_pixels(s, &input, 1)?;
             composite_region(&mut input, &self.source, self.width, self.height, &s.local);
         }
         if unsafe { studio_load(input.as_ptr(), self.width, self.height) } != 0 {
@@ -190,6 +174,40 @@ impl Backend {
             return Err(native_error());
         }
         Ok(bytes)
+    }
+    fn neural_pixels(
+        &mut self,
+        s: &StudioState,
+        source: &[u8],
+        sample_bytes: u8,
+    ) -> Result<Vec<u8>, String> {
+        self.init()?;
+        let root = neural::configured_root().ok_or("Neural runtime not configured. Select your Visual Enhancer v13.2 folder in Settings, or explicitly turn neural rendering off.")?;
+        neural::interpreter(&root)?;
+        let key = neural::Key {
+            tone_map: s.neural.tone_map,
+            root,
+            sample_bytes,
+            style: s.neural.style.clone(),
+            intensity: s.local.intensity,
+            tone: s.local.tone,
+            structure: s.local.structure,
+            resolution: s.processing_resolution,
+        };
+        if self.neural_cache.as_ref().map(|(k, _)| k) != Some(&key) {
+            let (pixels, diagnostic) = neural::render(
+                &mut self.worker,
+                &key,
+                source,
+                self.width,
+                self.height,
+                self.source_id,
+            )?;
+            app_log(&format!("[NEURAL] {}", diagnostic));
+            self.diagnostics = diagnostic;
+            self.neural_cache = Some((key, pixels));
+        }
+        Ok(self.neural_cache.as_ref().unwrap().1.clone())
     }
 }
 #[derive(Clone, Deserialize)]

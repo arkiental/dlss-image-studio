@@ -217,6 +217,8 @@ export function normalizeState(value: unknown): StudioState {
   const s = structuredClone(value) as StudioState;
   if (!s.local || !s.neural || !s.zoom)
     throw Error("Missing adjustment groups");
+  if (s.neural.toneMap !== undefined && typeof s.neural.toneMap !== "boolean")
+    throw Error("Invalid neural tone mapping setting");
   s.finish = { ...finishDefaults(), ...s.finish };
   if (
     typeof s.finish.lutId !== "string" ||
