@@ -17,12 +17,12 @@ source, including when neural processing evaluates a smaller resolution.
 Neural eligibility is determined by actual RGB values in the linear-sRGB working
 space, allowing 0.0001 boundary tolerance for ICC round-off. High-bit-depth SDR
 PNG/TIFF and in-range float sources are eligible. True HDR/extended-gamut sources
-use the explicit **Tone-map for neural** action; this interface clips its own output
+automatically use a labeled 16-bit SDR working copy on fresh import; this interface clips its own output
 to 0–1 and cannot honestly be described as an unbounded HDR neural pipeline.
 Source and pass data remain immutable. Screen previews and clipboard are 8-bit,
 but 16-bit file exports keep the neural output precision.
 
-The opt-in working-copy conversion uses max-RGB Reinhard compression in linear
+The reversible working-copy conversion uses max-RGB Reinhard compression in linear
 sRGB: positive RGB channels share the factor `1 / (1 + max(R,G,B,0))`; negative
 values clip to zero in this copy. Original HDR samples and alpha remain untouched.
 The choice is part of adjustment state, undo/history, snapshots and saved projects.

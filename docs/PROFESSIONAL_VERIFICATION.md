@@ -9,17 +9,17 @@ neural settings, verified changes and alpha preservation, exported PNG16 at
 error was 0.00182–0.00193 of an 8-bit code value on average. Switching the worker
 between 8-bit and 16-bit source formats also passed.
 
-The same test opened a 32-bit HDR EXR, verified rejection without opt-in, then
+The same test opened a 32-bit HDR EXR, verified rejection without working-copy conversion, then
 evaluated its explicitly tone-mapped 16-bit SDR working copy. NGX create/evaluate
 returned `0x00000001`; the original HDR float samples and alpha were unchanged.
 This verifies SDR neural enhancement from HDR input, not unbounded HDR neural
 processing. Warm evaluation was about 24 ms at the tested dimensions.
 
 29 ordinary native tests and 38 frontend tests passed. The synthetic UI transport
-checks cover enabled 16-bit controls, HDR opt-in and reversal. Native installed-app
+checks cover enabled 16-bit controls, automatic HDR working-copy selection, reversal, reset retention and clearing the mode on SDR reload. Native installed-app
 inspection confirmed 16-bit source + enabled neural controls + Ready; the user
 stopped desktop input with Escape before the interactive slider check completed.
-HDR opt-in is covered by the automated UI check and physical-GPU test.
+The HDR conversion is covered by the physical-GPU test; automatic import mode selection is covered by the UI transport check.
 
 Verified on 29 September 2026 on Windows with an NVIDIA GeForce RTX 4090, driver 591.86, and the separately installed Visual Enhancer v13.2 runtime. This report covers the implemented core workspace. It does not certify every requested professional feature; see the [implementation and limits matrix](PROFESSIONAL_WORKSPACE.md).
 

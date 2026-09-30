@@ -349,17 +349,10 @@ await page.evaluate(() => {
 });
 await page.getByRole("button", { name: "Open Render", exact: true }).click();
 await ready();
+await expect(page.getByText(/HDR source preserved/)).toHaveCount(0);
 await expect(
-  page.getByRole("checkbox", { name: "Enable neural rendering" }),
-).toBeDisabled();
-await expect(
-  page.getByRole("checkbox", { name: "Enable neural rendering" }),
-).not.toBeChecked();
-await expect(page.getByText(/HDR source preserved/)).toBeVisible();
-await page
-  .getByRole("button", { name: "Tone-map for neural", exact: true })
-  .click();
-await ready();
+  page.getByText("Neural input: tone-mapped SDR · 16-bit", { exact: true }),
+).toBeVisible();
 await expect(
   page.getByRole("checkbox", { name: "Enable neural rendering" }),
 ).toBeEnabled();
@@ -369,9 +362,11 @@ await expect(
 expect(
   await page.evaluate(() => window.requests.at(-1).state.neural.toneMap),
 ).toBe(true);
-await page.getByRole("button",{name:"Reset all",exact:true}).click();
+await page.getByRole("button", { name: "Reset all", exact: true }).click();
 await ready();
-expect(await page.evaluate(()=>window.requests.at(-1).state.neural.toneMap)).toBe(true);
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.neural.toneMap),
+).toBe(true);
 await page
   .getByRole("button", { name: "Use original HDR", exact: true })
   .click();
@@ -379,6 +374,26 @@ await ready();
 expect(
   await page.evaluate(() => window.requests.at(-1).state.neural.enabled),
 ).toBe(false);
+await expect(
+  page.getByRole("checkbox", { name: "Enable neural rendering" }),
+).toBeDisabled();
+await page
+  .getByRole("button", { name: "Tone-map for neural", exact: true })
+  .click();
+await ready();
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.neural),
+).toMatchObject({ enabled: true, toneMap: true });
+// Importing SDR again clears the HDR working-copy mode.
+await page.evaluate(() => {
+  window.sourceHdrRange = false;
+  window.dialogPaths.push("D:/renders/16-bit.png");
+});
+await page.getByRole("button", { name: "Open Render", exact: true }).click();
+await ready();
+expect(
+  await page.evaluate(() => window.requests.at(-1).state.neural),
+).toMatchObject({ enabled: true, toneMap: false });
 await browser.close();
 if (errors.length) throw Error(errors.join("\n"));
 console.log(

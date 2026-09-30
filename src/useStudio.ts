@@ -273,12 +273,10 @@ export function useStudio() {
       if (!keep) {
         resetDocument();
         const s = initial();
-        s.neural.enabled = meta.neuralSupported !== false && s.neural.enabled;
+        // HDR imports use a labeled SDR neural working copy; the float source
+        // remains immutable. Reopened projects retain their saved input mode.
+        s.neural.toneMap = meta.neuralSupported === false;
         setState(s);
-        if (meta.neuralSupported === false)
-          setError(
-            "HDR source preserved. Choose ‘Tone-map for neural’ under Neural Adjustments to enhance a 16-bit SDR working copy.",
-          );
       }
     } catch (e) {
       if (id === sourceId.current) {
